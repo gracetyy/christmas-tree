@@ -30,9 +30,10 @@ This feature uses **MediaPipe Hands**, a high-fidelity palm and finger tracking 
 
 ## 📸 Instagram Import (How it works)
 When you enter a username:
-1. A backend service uses a **Headless Browser (Puppeteer/Playwright)** or a **Scraping API** to visit the public Instagram profile.
-2. It identifies the most recent high-quality image URLs from the profile's grid.
-3. These images are processed and sent back to the app to be instantly "hung" as Polaroids on the 3D tree.
+1. The app sends a request to a backend webhook powered by **Bubblelab** (a YC-backed startup specializing in AI-driven automation).
+2. Bubblelab's service uses a **Headless Browser** to securely visit the public Instagram profile.
+3. It identifies the most recent high-quality image URLs from the profile's grid.
+4. These images are processed, optimized, and sent back to the app to be instantly "hung" as Polaroids on the 3D tree.
 
 ---
 
@@ -58,6 +59,7 @@ When you enter a username:
 ## 🛠️ Built With
 - **React & Three.js (React Three Fiber)**: For rendering the 3D scene.
 - **MediaPipe**: For the AI hand gesture tracking.
+- **Bubblelab (YC Startup)**: For the Instagram profile scraping and image processing API.
 - **Tailwind CSS**: For the user interface.
 
 ## 📄 License
