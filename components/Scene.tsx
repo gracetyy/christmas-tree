@@ -85,7 +85,7 @@ const CameraController: React.FC<{
     else if (controlMode === ControlMode.MOUSE && isAnimating.current) {
         if (controls) {
             const orbitControls = controls as any;
-            const lerpSpeed = 4 * delta;
+            const lerpSpeed = 6 * delta; // Increased speed for snappier album view
 
             if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
                 // ZOOM IN TO PHOTO
@@ -149,14 +149,13 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   return (
     <Canvas
-      shadows
       dpr={[1, 1.5]} // clamp device pixel ratio to reduce GPU load on hi-DPI screens
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
       gl={{ 
         antialias: true, 
         toneMapping: THREE.ReinhardToneMapping, 
         toneMappingExposure: 1.2, 
-        preserveDrawingBuffer: true,
+        preserveDrawingBuffer: true, // required for clean downloads
         powerPreference: 'high-performance',
       }}
       style={{ background: COLORS.BACKGROUND }}

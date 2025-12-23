@@ -27,7 +27,7 @@ const Star: React.FC = () => {
   
   const glowTexture = useMemo(() => GlowTexture(), []);
 
-  // 5-Pointed Star Shape
+  // Classic 5-Pointed Star Shape
   const starGeometry = useMemo(() => {
       const shape = new THREE.Shape();
       const spikes = 5;
@@ -50,7 +50,7 @@ const Star: React.FC = () => {
           bevelEnabled: true,
           bevelThickness: 0.2,
           bevelSize: 0.1,
-          bevelSegments: 5
+          bevelSegments: 3
       };
       
       const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -62,17 +62,18 @@ const Star: React.FC = () => {
     if (groupRef.current) {
       const time = state.clock.elapsedTime;
       
-      // Gentle floating
+      // Gentle floating motion
       groupRef.current.position.y = (TREE_CONFIG.HEIGHT / 2) + 0.8 + Math.sin(time * 1.5) * 0.1;
       
-      // Rotation
+      // Slow rotation
       groupRef.current.rotation.y = time * 0.5;
+      groupRef.current.rotation.z = Math.sin(time * 0.5) * 0.1; 
       
       // Pulsing scale
       const pulse = 1 + Math.sin(time * 3) * 0.05;
       groupRef.current.scale.set(pulse, pulse, pulse);
 
-      // Pulse light
+      // Pulse the light intensity
       if (glowRef.current) {
         glowRef.current.intensity = 3 + Math.sin(time * 3) * 1;
       }
@@ -97,22 +98,22 @@ const Star: React.FC = () => {
          <meshStandardMaterial 
              color={COLORS.STAR} 
              emissive={COLORS.STAR_GLOW} 
-             emissiveIntensity={1.0} 
-             metalness={0.8} 
-             roughness={0.2} 
+             emissiveIntensity={1.5} 
+             metalness={0.9} 
+             roughness={0.1} 
          />
       </mesh>
       
+      {/* Extra Sparkles for magical feel */}
       <Sparkles count={15} scale={4} size={6} speed={0.4} opacity={0.7} color="#fff" />
 
-      {/* Light Source inside */}
+      {/* Light Source inside the star - No shadows for performance */}
       <pointLight 
         ref={glowRef}
         color={COLORS.STAR_GLOW} 
         distance={30} 
         decay={2} 
-        castShadow
-        shadow-bias={-0.0001}
+        castShadow={false}
       />
     </group>
   );

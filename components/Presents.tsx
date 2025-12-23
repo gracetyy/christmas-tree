@@ -13,8 +13,8 @@ interface PresentProps {
 const PresentBox: React.FC<PresentProps> = ({ position, rotation, scale, color }) => {
   return (
     <group position={position} rotation={rotation} scale={scale}>
-      {/* Main Box - Rounded for better look */}
-      <RoundedBox args={[1, 1, 1]} radius={0.06} smoothness={4} castShadow receiveShadow position={[0, 0.5, 0]}>
+      {/* Main Box - Rounded for better look. No shadows for high performance. */}
+      <RoundedBox args={[1, 1, 1]} radius={0.06} smoothness={2} position={[0, 0.5, 0]}>
         <meshStandardMaterial color={color} roughness={0.3} metalness={0.1} />
       </RoundedBox>
 
