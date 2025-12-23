@@ -109,7 +109,7 @@ const Overlay: React.FC<OverlayProps> = ({
   if (isRecording) return null;
 
   return (
-    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
+    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-6">
       
       {/* Top Header - Just the Title */}
       <div className="flex flex-col justify-center items-center w-full relative pt-4 md:pt-8 px-4">
@@ -340,7 +340,7 @@ const Overlay: React.FC<OverlayProps> = ({
                   className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
               >
                   <Instagram size={16} className="text-[#fd1d1d]" />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Instagram</span>
+                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Import from Instagram</span>
               </button>
 
               <div className="w-px h-6 bg-white/10 mx-0.5"></div>
@@ -397,7 +397,7 @@ const Overlay: React.FC<OverlayProps> = ({
               title="Star our repo!"
             >
                 <Github size={16} />
-                <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Star Repo</span>
+                <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Please star our repo! &lt;3</span>
             </button>
 
             <input 
