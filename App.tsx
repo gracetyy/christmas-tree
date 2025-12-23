@@ -272,16 +272,36 @@ const App: React.FC = () => {
   const handleNextPhoto = useCallback(() => {
     if (!focusedPhoto || photos.length === 0) return;
     const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-    const nextIndex = (currentIndex + 1) % photos.length;
+    // Visual "Next" (Right) should go to the previous index in our CCW spiral
+    const nextIndex = (currentIndex - 1 + photos.length) % photos.length;
     handlePhotoClick(photos[nextIndex]);
   }, [focusedPhoto, photos, handlePhotoClick]);
 
   const handlePrevPhoto = useCallback(() => {
     if (!focusedPhoto || photos.length === 0) return;
     const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-    const prevIndex = (currentIndex - 1 + photos.length) % photos.length;
+    // Visual "Prev" (Left) should go to the next index in our CCW spiral
+    const prevIndex = (currentIndex + 1) % photos.length;
     handlePhotoClick(photos[prevIndex]);
   }, [focusedPhoto, photos, handlePhotoClick]);
+
+  // Keyboard Navigation for Album Mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (zoomLevel !== ZoomLevel.ZOOMED_IN || isInstaModalOpen || isRecording) return;
+      
+      if (e.key === 'ArrowRight') {
+        handleNextPhoto();
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevPhoto();
+      } else if (e.key === 'Escape') {
+        setZoomLevel(ZoomLevel.FULL_TREE);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [zoomLevel, isInstaModalOpen, isRecording, handleNextPhoto, handlePrevPhoto]);
 
   const handleDeletePhoto = (id: string) => {
     setPhotos(prev => prev.filter(p => p.id !== id));
