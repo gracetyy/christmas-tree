@@ -160,20 +160,20 @@ const Overlay: React.FC<OverlayProps> = ({
                   <ul className="space-y-4">
                       <li className="flex items-center gap-4 group">
                         <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                          <ZoomIn size={18} className="text-white/70" />
+                          <Hand size={18} className="text-white/70" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Spread</span>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
                           <span className="text-sm font-medium">Zoom In</span>
                         </div>
                       </li>
                       
                       <li className="flex items-center gap-4 group">
                         <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                          <ZoomOut size={18} className="text-white/70" />
+                          <div className="w-4 h-4 rounded-md border-2 border-white/70" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Pinch / Palm</span>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
                           <span className="text-sm font-medium">Zoom Out</span>
                         </div>
                       </li>

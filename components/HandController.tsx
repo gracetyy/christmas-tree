@@ -104,15 +104,16 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
     const isRingExtended = ringTip.y < ringBase.y;
     const isPinkyExtended = pinkyTip.y < pinkyBase.y;
     
-    // If at least 3 fingers are extended and thumb is not pinched, consider it an open palm
-    const extendedCount = [isIndexExtended, isMiddleExtended, isRingExtended, isPinkyExtended].filter(Boolean).length;
-    const isOpenPalm = extendedCount >= 3 && distance > GESTURE_THRESHOLDS.PINCH_DISTANCE;
+    // If at least 3 fingers are curled and thumb is close to them, consider it a closed palm (fist)
+    const curledCount = [isIndexExtended, isMiddleExtended, isRingExtended, isPinkyExtended].filter(x => !x).length;
+    const isClosedPalm = curledCount >= 3 && distance < GESTURE_THRESHOLDS.SPREAD_DISTANCE;
 
-    if (distance < GESTURE_THRESHOLDS.PINCH_DISTANCE || isOpenPalm) {
-        // Pinch OR Open Palm triggers Zoom Out / Reset
+    if (isClosedPalm) {
+        // Closed Palm (Fist) triggers Zoom Out / Reset
         onGesture('ZOOM_OUT');
         lastHandPos.current = null; 
     } else if (distance > GESTURE_THRESHOLDS.SPREAD_DISTANCE) {
+        // Spread Fingers (Open Palm) triggers Zoom In
         onGesture('ZOOM_IN');
         
         // Handle Panning when hand is open/spread
