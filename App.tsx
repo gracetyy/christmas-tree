@@ -17,6 +17,9 @@ const App: React.FC = () => {
   const [userName, setUserName] = useState('');
   const [isNameSet, setIsNameSet] = useState(false);
   
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingType, setRecordingType] = useState<'FULL' | 'ALBUM' | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const panOffset = useRef({ x: 0, y: 0 });
@@ -30,16 +33,8 @@ const App: React.FC = () => {
   const [instaLoading, setInstaLoading] = useState(false);
   const [instaStatus, setInstaStatus] = useState('');
 
-  // Initialize Photos and URL Params
+  // Initialize Photos
   useEffect(() => {
-    // Check for URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const nameParam = params.get('name');
-    if (nameParam) {
-        setUserName(decodeURIComponent(nameParam));
-        setIsNameSet(true);
-    }
-
     const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
     const initialPhotos: PhotoData[] = positions.map((pos, index) => {
       // Rotate through placeholder types
@@ -57,65 +52,47 @@ const App: React.FC = () => {
     setPhotos(initialPhotos);
   }, []);
 
-  // Initialize Music & Google API
+  // Robust Audio Autoplay Logic
   useEffect(() => {
-    // Attempt auto-play
-    if (audioRef.current) {
-        audioRef.current.volume = 0.8; // Increased volume
-        audioRef.current.play()
-            .then(() => {
-                console.log("Autoplay successful");
-                setIsMusicPlaying(true);
-            })
-            .catch((e) => {
-                console.log("Autoplay blocked, waiting for user interaction", e);
-                setIsMusicPlaying(false);
-            });
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = 0.8;
+
+    const attemptPlay = () => {
+      audio.play()
+        .then(() => {
+          setIsMusicPlaying(true);
+          removeListeners();
+        })
+        .catch(err => {
+          console.log("Autoplay still waiting for interaction...", err);
+        });
+    };
+
+    const removeListeners = () => {
+      window.removeEventListener('click', attemptPlay);
+      window.removeEventListener('touchstart', attemptPlay);
+      window.removeEventListener('mousedown', attemptPlay);
+      window.removeEventListener('keydown', attemptPlay);
+    };
+
+    // 1. Initial attempt
+    attemptPlay();
+
+    // 2. Add listeners for backup
+    window.addEventListener('click', attemptPlay);
+    window.addEventListener('touchstart', attemptPlay);
+    window.addEventListener('mousedown', attemptPlay);
+    window.addEventListener('keydown', attemptPlay);
 
     // Load Google Drive API
     loadGoogleApi()
       .then(() => setIsGoogleApiReady(true))
       .catch(err => console.log("Google API load status:", err.message));
 
+    return removeListeners;
   }, []);
-
-  // More aggressive retry for autoplay on any interaction
-  useEffect(() => {
-    let hasInteracted = false;
-
-    const startAudio = (e: Event) => {
-      // If clicking the music toggle button, let toggleMusic handle it
-      const target = e.target as HTMLElement;
-      if (target.closest('button[title*="Music"]')) return;
-
-      if (!hasInteracted && audioRef.current && audioRef.current.paused) {
-         hasInteracted = true;
-         audioRef.current.muted = false;
-         audioRef.current.play()
-           .then(() => {
-             setIsMusicPlaying(true);
-             cleanup();
-           })
-           .catch((err) => console.error("Playback failed even after interaction:", err));
-      }
-    };
-
-    const cleanup = () => {
-        window.removeEventListener('mousedown', startAudio);
-        window.removeEventListener('keydown', startAudio);
-        window.removeEventListener('touchstart', startAudio);
-        window.removeEventListener('click', startAudio);
-    };
-
-    // Add multiple listeners to ensure capture of first interaction
-    window.addEventListener('mousedown', startAudio);
-    window.addEventListener('keydown', startAudio);
-    window.addEventListener('touchstart', startAudio);
-    window.addEventListener('click', startAudio);
-
-    return cleanup;
-  }, []); // Only run once on mount
 
   // Clear focused photo when zooming out
   useEffect(() => {
@@ -188,6 +165,59 @@ const App: React.FC = () => {
     if (zoomLevel === ZoomLevel.ZOOMED_IN) {
         setZoomLevel(ZoomLevel.FULL_TREE);
     }
+  };
+
+  const handleRecordVideo = (type: 'FULL' | 'ALBUM') => {
+    if (isRecording) return;
+    setIsRecording(true);
+    setRecordingType(type);
+    
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+        setIsRecording(false);
+        return;
+    }
+
+    // Determine the best supported MIME type
+    const formats = [
+        'video/mp4;codecs=h264',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+    ];
+    
+    const supportedMimeType = formats.find(f => MediaRecorder.isTypeSupported(f)) || 'video/webm';
+    const extension = supportedMimeType.includes('mp4') ? 'mp4' : 'webm';
+
+    console.log(`Starting recording with MIME type: ${supportedMimeType}`);
+
+    const stream = canvas.captureStream(30);
+    const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: supportedMimeType,
+        videoBitsPerSecond: 5000000 // 5Mbps
+    });
+
+    const chunks: Blob[] = [];
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: supportedMimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `christmas-tree-${type.toLowerCase()}.${extension}`;
+        link.click();
+        setIsRecording(false);
+        setRecordingType(null);
+    };
+
+    // Duration logic
+    const duration = type === 'FULL' ? 10000 : photos.length * 2500; // 10s for full, 2.5s per photo
+    
+    mediaRecorder.start();
+    setTimeout(() => {
+        mediaRecorder.stop();
+    }, duration);
   };
 
   const handleSingleUpload = (id: string, file: File) => {
@@ -329,8 +359,6 @@ const App: React.FC = () => {
         ref={audioRef} 
         src="/assets/music/christmas-song.mp3" 
         loop 
-        autoPlay
-        muted={false}
         preload="auto"
       />
       
@@ -344,6 +372,8 @@ const App: React.FC = () => {
         zoomLevel={zoomLevel}
         panOffset={panOffset}
         focusedPhoto={focusedPhoto}
+        isRecording={isRecording}
+        recordingType={recordingType}
       />
       
       <Overlay 
@@ -364,6 +394,8 @@ const App: React.FC = () => {
         setUserName={setUserName}
         isNameSet={isNameSet}
         setIsNameSet={setIsNameSet}
+        onRecordVideo={handleRecordVideo}
+        isRecording={isRecording}
       />
 
       <InstagramModal 

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Share2 } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Video } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -20,6 +20,8 @@ interface OverlayProps {
   setUserName: (name: string) => void;
   isNameSet: boolean;
   setIsNameSet: (set: boolean) => void;
+  onRecordVideo: (type: 'FULL' | 'ALBUM') => void;
+  isRecording: boolean;
 }
 
 const Overlay: React.FC<OverlayProps> = ({ 
@@ -39,7 +41,9 @@ const Overlay: React.FC<OverlayProps> = ({
   userName,
   setUserName,
   isNameSet,
-  setIsNameSet
+  setIsNameSet,
+  onRecordVideo,
+  isRecording
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,20 +104,9 @@ const Overlay: React.FC<OverlayProps> = ({
     }
   };
 
-  const handleShare = () => {
-    const url = new URL(window.location.href);
-    if (userName) url.searchParams.set('name', userName);
-    // Note: Instagram photos are not shared via URL as they are base64/large, 
-    // but we could store the IG username if we implemented persistent scraping.
-    
-    navigator.clipboard.writeText(url.toString()).then(() => {
-        alert('Shareable link copied to clipboard!');
-    }).catch(err => {
-        console.error('Failed to copy URL:', err);
-    });
-  };
-
   const [showUI, setShowUI] = useState(true);
+
+  if (isRecording) return null;
 
   return (
     <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
@@ -358,15 +351,36 @@ const Overlay: React.FC<OverlayProps> = ({
 
               <div className="w-px h-6 bg-white/10 mx-1"></div>
 
-              {/* Share Button */}
-              <button 
-                  onClick={handleShare}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
-                  title="Copy Shareable Link"
-              >
-                  <Share2 size={18} className="text-[#3b82f6]" />
-                  <span className="text-sm font-medium whitespace-nowrap text-white/90">Share Tree</span>
-            </button>
+              {/* Video Download Dropdown */}
+              <div className="relative group">
+                <button 
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white bg-white/5 hover:bg-white/10 ${isRecording ? 'animate-pulse bg-red-500/20' : ''}`}
+                    title="Download Video"
+                >
+                    <Video size={18} className={`${isRecording ? 'text-red-500' : 'text-[#3b82f6]'}`} />
+                    <span className="text-sm font-medium whitespace-nowrap text-white/90">
+                      {isRecording ? 'Recording...' : 'Download Video'}
+                    </span>
+                </button>
+                
+                {/* Dropdown Menu */}
+                {!isRecording && (
+                  <div className="absolute bottom-full left-0 mb-2 w-48 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                    <button 
+                      onClick={() => onRecordVideo('FULL')}
+                      className="w-full text-left px-4 py-3 text-xs font-medium text-white hover:bg-white/10 transition-colors border-b border-white/5"
+                    >
+                      Full Tree Rotation
+                    </button>
+                    <button 
+                      onClick={() => onRecordVideo('ALBUM')}
+                      className="w-full text-left px-4 py-3 text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                    >
+                      Album Cinematic View
+                    </button>
+                  </div>
+                )}
+              </div>
 
             <div className="w-px h-6 bg-white/10 mx-1"></div>
 
