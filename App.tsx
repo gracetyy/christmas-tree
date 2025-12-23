@@ -296,7 +296,7 @@ const App: React.FC = () => {
     >
       <audio 
         ref={audioRef} 
-        src="https://upload.wikimedia.org/wikipedia/commons/e/e6/Jingle_Bells_-_Kevin_MacLeod.ogg" 
+        src="/assets/music/christmas-song.mp3" 
         loop 
       />
       
