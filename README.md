@@ -2,6 +2,8 @@
 
 Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos.
 
+**✨ Try it out live at: [gracetyy.github.io/christmas-tree/](https://gracetyy.github.io/christmas-tree/)**
+
 ## ✨ Features
 
 - **📸 Your Photos, Your Tree**: Upload photos from your device or instantly import them from any **Instagram** profile!
@@ -30,8 +32,8 @@ This feature uses **MediaPipe Hands**, a high-fidelity palm and finger tracking 
 
 ## 📸 Instagram Import (How it works)
 When you enter a username:
-1. The app sends a request to a backend webhook powered by **Bubblelab** (a YC-backed startup specializing in AI-driven automation).
-2. Bubblelab's service uses a **Headless Browser** to securely visit the public Instagram profile.
+1. The app sends a request to a backend webhook powered by **[Bubble Lab](https://bubblelab.ai)** (YC W26 - the open-source, Typescript-native agentic workflow builder).
+2. Bubble Lab's service uses a **Headless Browser** to securely visit the public Instagram profile.
 3. It identifies the most recent high-quality image URLs from the profile's grid.
 4. These images are processed, optimized, and sent back to the app to be instantly "hung" as Polaroids on the 3D tree.
 
@@ -59,7 +61,7 @@ When you enter a username:
 ## 🛠️ Built With
 - **React & Three.js (React Three Fiber)**: For rendering the 3D scene.
 - **MediaPipe**: For the AI hand gesture tracking.
-- **Bubblelab (YC Startup)**: For the Instagram profile scraping and image processing API.
+- **Bubble Lab (YC W26)**: Open-source, Typescript-native agentic workflow builder for the Instagram scraping and image processing API.
 - **Tailwind CSS**: For the user interface.
 
 ## 📄 License
