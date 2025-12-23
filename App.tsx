@@ -179,7 +179,7 @@ const App: React.FC = () => {
     setPhotos(newPhotos);
   };
 
-  const handlePhotoClick = (photo: PhotoData) => {
+  const handlePhotoClick = useCallback((photo: PhotoData) => {
     if (interactionMode === InteractionMode.EDIT) {
         // handled in Polaroid component for file upload
         return; 
@@ -195,7 +195,21 @@ const App: React.FC = () => {
         x: photo.rotation[1], 
         y: photo.position[1] - CAMERA_CONFIG.ZOOM_IN_POS.y
     };
-  };
+  }, [interactionMode]);
+
+  const handleNextPhoto = useCallback(() => {
+    if (!focusedPhoto || photos.length === 0) return;
+    const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
+    const nextIndex = (currentIndex + 1) % photos.length;
+    handlePhotoClick(photos[nextIndex]);
+  }, [focusedPhoto, photos, handlePhotoClick]);
+
+  const handlePrevPhoto = useCallback(() => {
+    if (!focusedPhoto || photos.length === 0) return;
+    const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
+    const prevIndex = (currentIndex - 1 + photos.length) % photos.length;
+    handlePhotoClick(photos[prevIndex]);
+  }, [focusedPhoto, photos, handlePhotoClick]);
 
   const handleDeletePhoto = (id: string) => {
     setPhotos(prev => prev.filter(p => p.id !== id));
@@ -305,6 +319,8 @@ const App: React.FC = () => {
         setInteractionMode={setInteractionMode}
         onBulkUpload={handleBulkUpload}
         onOpenInstagram={() => setIsInstaModalOpen(true)}
+        onNext={handleNextPhoto}
+        onPrev={handlePrevPhoto}
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
         isHandReady={isHandReady}

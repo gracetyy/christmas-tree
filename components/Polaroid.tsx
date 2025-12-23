@@ -17,6 +17,8 @@ interface PolaroidProps {
   interactionMode: InteractionMode;
 }
 
+const tempScale = new THREE.Vector3();
+
 const Polaroid: React.FC<PolaroidProps> = ({ 
   data, 
   onUpload, 
@@ -51,7 +53,8 @@ const Polaroid: React.FC<PolaroidProps> = ({
       // Adjusted Base scale
       const baseScale = 0.85; 
       const targetScale = hovered ? baseScale * 1.15 : baseScale;
-      groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+      tempScale.set(targetScale, targetScale, targetScale);
+      groupRef.current.scale.lerp(tempScale, 0.1);
     }
   });
 

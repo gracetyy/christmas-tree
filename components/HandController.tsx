@@ -14,6 +14,12 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
   const requestRef = useRef<number>();
   const [loading, setLoading] = useState(true);
   const lastHandPos = useRef<{x: number, y: number} | null>(null);
+  const modeRef = useRef(mode);
+
+  // Update ref to current mode to avoid stale closures in the detection loop
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   useEffect(() => {
     const setupHandLandmarker = async () => {
@@ -30,7 +36,9 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
           numHands: 1
         });
         setLoading(false);
-        startDetection();
+        if (modeRef.current === ControlMode.HAND) {
+            startDetection();
+        }
       } catch (error) {
         console.error("Error initializing hand tracker:", error);
       }
@@ -52,6 +60,9 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
     if (!handLandmarkerRef.current || !videoRef.current) return;
 
     const detect = () => {
+      // Stop the loop if mode changes
+      if (modeRef.current !== ControlMode.HAND) return;
+
       if (videoRef.current && videoRef.current.readyState >= 2) {
         const results = handLandmarkerRef.current?.detectForVideo(videoRef.current, performance.now());
         

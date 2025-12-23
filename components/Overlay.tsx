@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -9,6 +9,8 @@ interface OverlayProps {
   setInteractionMode: (mode: InteractionMode) => void;
   onBulkUpload: (files: FileList) => void;
   onOpenInstagram: () => void;
+  onNext: () => void;
+  onPrev: () => void;
   zoomLevel: ZoomLevel;
   setZoomLevel: (level: ZoomLevel) => void;
   isHandReady: boolean;
@@ -23,6 +25,8 @@ const Overlay: React.FC<OverlayProps> = ({
   setInteractionMode,
   onBulkUpload, 
   onOpenInstagram,
+  onNext,
+  onPrev,
   zoomLevel,
   setZoomLevel,
   isHandReady,
@@ -255,11 +259,32 @@ const Overlay: React.FC<OverlayProps> = ({
               {zoomLevel === ZoomLevel.ZOOMED_IN && (
                   <>
                     <button
+                      onClick={onPrev}
+                      className="flex items-center justify-center w-10 h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                      title="Previous Photo"
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+
+                    <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+                    <button
                       onClick={() => setZoomLevel(ZoomLevel.FULL_TREE)}
                       className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10 whitespace-nowrap"
                     >
                       <span className="text-sm font-medium text-[#fff1a1]">Back to Tree</span>
                     </button>
+
+                    <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+                    <button
+                      onClick={onNext}
+                      className="flex items-center justify-center w-10 h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                      title="Next Photo"
+                    >
+                        <ChevronRight size={20} />
+                    </button>
+
                     <div className="w-px h-6 bg-white/10 mx-1"></div>
                   </>
               )}
