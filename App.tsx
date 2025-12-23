@@ -52,65 +52,47 @@ const App: React.FC = () => {
     setPhotos(initialPhotos);
   }, []);
 
-  // Initialize Music & Google API
+  // Robust Audio Autoplay Logic
   useEffect(() => {
-    // Attempt auto-play
-    if (audioRef.current) {
-        audioRef.current.volume = 0.8; // Increased volume
-        audioRef.current.play()
-            .then(() => {
-                console.log("Autoplay successful");
-                setIsMusicPlaying(true);
-            })
-            .catch((e) => {
-                console.log("Autoplay blocked, waiting for user interaction", e);
-                setIsMusicPlaying(false);
-            });
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = 0.8;
+
+    const attemptPlay = () => {
+      audio.play()
+        .then(() => {
+          setIsMusicPlaying(true);
+          removeListeners();
+        })
+        .catch(err => {
+          console.log("Autoplay still waiting for interaction...", err);
+        });
+    };
+
+    const removeListeners = () => {
+      window.removeEventListener('click', attemptPlay);
+      window.removeEventListener('touchstart', attemptPlay);
+      window.removeEventListener('mousedown', attemptPlay);
+      window.removeEventListener('keydown', attemptPlay);
+    };
+
+    // 1. Initial attempt
+    attemptPlay();
+
+    // 2. Add listeners for backup
+    window.addEventListener('click', attemptPlay);
+    window.addEventListener('touchstart', attemptPlay);
+    window.addEventListener('mousedown', attemptPlay);
+    window.addEventListener('keydown', attemptPlay);
 
     // Load Google Drive API
     loadGoogleApi()
       .then(() => setIsGoogleApiReady(true))
       .catch(err => console.log("Google API load status:", err.message));
 
+    return removeListeners;
   }, []);
-
-  // More aggressive retry for autoplay on any interaction
-  useEffect(() => {
-    let hasInteracted = false;
-
-    const startAudio = (e: Event) => {
-      // If clicking the music toggle button, let toggleMusic handle it
-      const target = e.target as HTMLElement;
-      if (target.closest('button[title*="Music"]')) return;
-
-      if (!hasInteracted && audioRef.current && audioRef.current.paused) {
-         hasInteracted = true;
-         audioRef.current.muted = false;
-         audioRef.current.play()
-           .then(() => {
-             setIsMusicPlaying(true);
-             cleanup();
-           })
-           .catch((err) => console.error("Playback failed even after interaction:", err));
-      }
-    };
-
-    const cleanup = () => {
-        window.removeEventListener('mousedown', startAudio);
-        window.removeEventListener('keydown', startAudio);
-        window.removeEventListener('touchstart', startAudio);
-        window.removeEventListener('click', startAudio);
-    };
-
-    // Add multiple listeners to ensure capture of first interaction
-    window.addEventListener('mousedown', startAudio);
-    window.addEventListener('keydown', startAudio);
-    window.addEventListener('touchstart', startAudio);
-    window.addEventListener('click', startAudio);
-
-    return cleanup;
-  }, []); // Only run once on mount
 
   // Clear focused photo when zooming out
   useEffect(() => {
@@ -377,8 +359,6 @@ const App: React.FC = () => {
         ref={audioRef} 
         src="/assets/music/christmas-song.mp3" 
         loop 
-        autoPlay
-        muted={false}
         preload="auto"
       />
       
