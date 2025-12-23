@@ -51,11 +51,14 @@ const App: React.FC = () => {
   useEffect(() => {
     // Attempt auto-play
     if (audioRef.current) {
-        audioRef.current.volume = 0.4;
+        audioRef.current.volume = 0.8; // Increased volume
         audioRef.current.play()
-            .then(() => setIsMusicPlaying(true))
+            .then(() => {
+                console.log("Autoplay successful");
+                setIsMusicPlaying(true);
+            })
             .catch((e) => {
-                console.log("Autoplay blocked, user interaction required", e);
+                console.log("Autoplay blocked, waiting for user interaction", e);
                 setIsMusicPlaying(false);
             });
     }
@@ -67,24 +70,28 @@ const App: React.FC = () => {
 
   }, []);
 
-  // Retry autoplay on first user interaction if blocked
+  // More aggressive retry for autoplay on any interaction
   useEffect(() => {
     const startAudio = () => {
       if (audioRef.current && audioRef.current.paused) {
+         audioRef.current.muted = false;
          audioRef.current.play()
            .then(() => setIsMusicPlaying(true))
-           .catch(() => {});
+           .catch((err) => console.error("Playback failed even after interaction:", err));
       }
     };
 
-    if (!isMusicPlaying) {
-        window.addEventListener('click', startAudio, { once: true });
-        window.addEventListener('touchstart', startAudio, { once: true });
-    }
+    // Add multiple listeners to ensure capture of first interaction
+    window.addEventListener('mousedown', startAudio, { once: true });
+    window.addEventListener('keydown', startAudio, { once: true });
+    window.addEventListener('touchstart', startAudio, { once: true });
+    window.addEventListener('click', startAudio, { once: true });
 
     return () => {
-        window.removeEventListener('click', startAudio);
+        window.removeEventListener('mousedown', startAudio);
+        window.removeEventListener('keydown', startAudio);
         window.removeEventListener('touchstart', startAudio);
+        window.removeEventListener('click', startAudio);
     };
   }, [isMusicPlaying]);
 
@@ -298,6 +305,9 @@ const App: React.FC = () => {
         ref={audioRef} 
         src="/assets/music/christmas-song.mp3" 
         loop 
+        autoPlay
+        muted={false}
+        preload="auto"
       />
       
       <Scene 
