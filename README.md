@@ -4,6 +4,12 @@ Transform your favorite memories into a magical, interactive 3D holiday experien
 
 **✨ Try it out live at: [gracetyy.github.io/christmas-tree/](https://gracetyy.github.io/christmas-tree/)**
 
+## 🎥 Demo
+
+![Demo — scripting @duolingo Instagram as an example](./Duo.gif)
+
+> Demo: scripting `@duolingo` Instagram as an example input for the Instagram import.
+
 ## ✨ Features
 
 - **📸 Your Photos, Your Tree**: Upload photos from your device or instantly import them from any **Instagram** profile!
