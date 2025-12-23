@@ -196,20 +196,34 @@ const App: React.FC = () => {
         return;
     }
 
+    // Determine the best supported MIME type
+    const formats = [
+        'video/mp4;codecs=h264',
+        'video/mp4',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm'
+    ];
+    
+    const supportedMimeType = formats.find(f => MediaRecorder.isTypeSupported(f)) || 'video/webm';
+    const extension = supportedMimeType.includes('mp4') ? 'mp4' : 'webm';
+
+    console.log(`Starting recording with MIME type: ${supportedMimeType}`);
+
     const stream = canvas.captureStream(30);
     const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
+        mimeType: supportedMimeType,
         videoBitsPerSecond: 5000000 // 5Mbps
     });
 
     const chunks: Blob[] = [];
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
     mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: supportedMimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `christmas-tree-${type.toLowerCase()}.webm`;
+        link.download = `christmas-tree-${type.toLowerCase()}.${extension}`;
         link.click();
         setIsRecording(false);
         setRecordingType(null);
