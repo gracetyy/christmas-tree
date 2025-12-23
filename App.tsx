@@ -17,6 +17,9 @@ const App: React.FC = () => {
   const [userName, setUserName] = useState('');
   const [isNameSet, setIsNameSet] = useState(false);
   
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingType, setRecordingType] = useState<'FULL' | 'ALBUM' | null>(null);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const panOffset = useRef({ x: 0, y: 0 });
@@ -30,28 +33,8 @@ const App: React.FC = () => {
   const [instaLoading, setInstaLoading] = useState(false);
   const [instaStatus, setInstaStatus] = useState('');
 
-  // Initialize Photos and URL Params
+  // Initialize Photos
   useEffect(() => {
-    // Check for URL parameters
-    const params = new URLSearchParams(window.location.search);
-    
-    // Support both direct 'name' and encoded 'code'
-    const nameParam = params.get('name');
-    const codeParam = params.get('code');
-
-    if (codeParam) {
-        try {
-            const decodedName = decodeURIComponent(atob(codeParam));
-            setUserName(decodedName);
-            setIsNameSet(true);
-        } catch (e) {
-            console.error("Failed to decode share code", e);
-        }
-    } else if (nameParam) {
-        setUserName(decodeURIComponent(nameParam));
-        setIsNameSet(true);
-    }
-
     const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
     const initialPhotos: PhotoData[] = positions.map((pos, index) => {
       // Rotate through placeholder types
@@ -200,6 +183,45 @@ const App: React.FC = () => {
     if (zoomLevel === ZoomLevel.ZOOMED_IN) {
         setZoomLevel(ZoomLevel.FULL_TREE);
     }
+  };
+
+  const handleRecordVideo = (type: 'FULL' | 'ALBUM') => {
+    if (isRecording) return;
+    setIsRecording(true);
+    setRecordingType(type);
+    
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+        setIsRecording(false);
+        return;
+    }
+
+    const stream = canvas.captureStream(30);
+    const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000 // 5Mbps
+    });
+
+    const chunks: Blob[] = [];
+    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `christmas-tree-${type.toLowerCase()}.webm`;
+        link.click();
+        setIsRecording(false);
+        setRecordingType(null);
+    };
+
+    // Duration logic
+    const duration = type === 'FULL' ? 10000 : photos.length * 2500; // 10s for full, 2.5s per photo
+    
+    mediaRecorder.start();
+    setTimeout(() => {
+        mediaRecorder.stop();
+    }, duration);
   };
 
   const handleSingleUpload = (id: string, file: File) => {
@@ -356,6 +378,8 @@ const App: React.FC = () => {
         zoomLevel={zoomLevel}
         panOffset={panOffset}
         focusedPhoto={focusedPhoto}
+        isRecording={isRecording}
+        recordingType={recordingType}
       />
       
       <Overlay 
@@ -376,6 +400,8 @@ const App: React.FC = () => {
         setUserName={setUserName}
         isNameSet={isNameSet}
         setIsNameSet={setIsNameSet}
+        onRecordVideo={handleRecordVideo}
+        isRecording={isRecording}
       />
 
       <InstagramModal 

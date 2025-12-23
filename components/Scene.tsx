@@ -21,6 +21,9 @@ interface SceneProps {
   zoomLevel: ZoomLevel;
   panOffset: React.MutableRefObject<{x: number, y: number}>;
   focusedPhoto: PhotoData | null;
+  isRecording?: boolean;
+  recordingType?: 'FULL' | 'ALBUM' | null;
+  photos: PhotoData[];
 }
 
 const CameraController: React.FC<{ 
@@ -28,11 +31,15 @@ const CameraController: React.FC<{
   controlMode: ControlMode; 
   panOffset: React.MutableRefObject<{x: number, y: number}>;
   focusedPhoto: PhotoData | null;
-}> = ({ zoomLevel, controlMode, panOffset, focusedPhoto }) => {
+  isRecording: boolean;
+  recordingType: 'FULL' | 'ALBUM' | null;
+  photos: PhotoData[];
+}> = ({ zoomLevel, controlMode, panOffset, focusedPhoto, isRecording, recordingType, photos }) => {
   const { camera, controls } = useThree();
   const targetPos = useRef(CAMERA_CONFIG.DEFAULT_POS.clone());
   const lookAtTarget = useRef(CAMERA_CONFIG.LOOK_AT_OFFSET.clone());
   const isAnimating = useRef(false);
+  const recordingStartTime = useRef(0);
 
   useEffect(() => {
     // Reset panning when switching modes or zoom levels
@@ -45,9 +52,48 @@ const CameraController: React.FC<{
     if (controlMode === ControlMode.MOUSE) {
         isAnimating.current = true;
     }
-  }, [zoomLevel, controlMode, focusedPhoto]);
+
+    if (isRecording) {
+      recordingStartTime.current = performance.now();
+    }
+  }, [zoomLevel, controlMode, focusedPhoto, isRecording]);
 
   useFrame((state, delta) => {
+    // 0. RECORDING LOGIC
+    if (isRecording) {
+      const time = (performance.now() - recordingStartTime.current) / 1000;
+      
+      if (recordingType === 'FULL') {
+        // Full Tree Rotation
+        const angle = time * (Math.PI * 2 / 10); // 360 degrees in 10s
+        const radius = 40;
+        camera.position.set(Math.sin(angle) * radius, 15, Math.cos(angle) * radius);
+        camera.lookAt(0, 5, 0);
+        if (controls) (controls as any).update();
+        return;
+      } else if (recordingType === 'ALBUM' && photos.length > 0) {
+        // Album Mode - Cycle through photos
+        const photoInterval = 2.5; // 2.5s per photo
+        const index = Math.min(Math.floor(time / photoInterval), photos.length - 1);
+        const photo = photos[index];
+        
+        const orbitControls = controls as any;
+        const photoPos = new THREE.Vector3(...photo.position);
+        orbitControls.target.lerp(photoPos, 6 * delta);
+        
+        const dist = 6;
+        const angle = photo.rotation[1];
+        const camX = photoPos.x + Math.sin(angle) * dist;
+        const camZ = photoPos.z + Math.cos(angle) * dist;
+        const camY = photoPos.y; 
+
+        const idealPos = new THREE.Vector3(camX, camY, camZ);
+        camera.position.lerp(idealPos, 6 * delta);
+        orbitControls.update();
+        return;
+      }
+    }
+
     // 1. HAND CONTROL LOGIC (Gestures)
     if (controlMode === ControlMode.HAND) {
       if (zoomLevel === ZoomLevel.ZOOMED_IN) {
@@ -145,7 +191,9 @@ const Scene: React.FC<SceneProps> = ({
     interactionMode, 
     zoomLevel, 
     panOffset, 
-    focusedPhoto 
+    focusedPhoto,
+    isRecording = false,
+    recordingType = null
 }) => {
   return (
     <Canvas
@@ -165,6 +213,9 @@ const Scene: React.FC<SceneProps> = ({
         controlMode={controlMode} 
         panOffset={panOffset} 
         focusedPhoto={focusedPhoto}
+        isRecording={isRecording}
+        recordingType={recordingType}
+        photos={photos}
       />
       
       {/* City preset gives nice reflections for shiny objects */}
