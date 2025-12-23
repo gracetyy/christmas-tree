@@ -6,7 +6,10 @@ Transform your favorite memories into a magical, interactive 3D holiday experien
 
 ## 🎥 Demo
 
-<img src="./Duo.gif" alt="Demo — scripting @duolingo Instagram as an example" width="420" />
+<p>
+  <img src="./Duo.gif" alt="Demo 1 — scripting @duolingo Instagram as an example" width="360" />
+  <img src="./Duo2.gif" alt="Demo 2 — scripting @duolingo Instagram as an example" width="360" />
+</p>
 
 > Demo: scripting `@duolingo` Instagram as an example input for the Instagram import.
 
