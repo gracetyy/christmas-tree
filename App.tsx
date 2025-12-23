@@ -59,7 +59,13 @@ const App: React.FC = () => {
 
     audio.volume = 0.8;
 
-    const attemptPlay = () => {
+    const attemptPlay = (e?: Event) => {
+      // If clicking the music toggle button, let toggleMusic handle it
+      if (e) {
+        const target = e.target as HTMLElement;
+        if (target.closest('button[title*="Music"]')) return;
+      }
+
       audio.play()
         .then(() => {
           setIsMusicPlaying(true);
@@ -374,6 +380,7 @@ const App: React.FC = () => {
         focusedPhoto={focusedPhoto}
         isRecording={isRecording}
         recordingType={recordingType}
+        userName={userName}
       />
       
       <Overlay 

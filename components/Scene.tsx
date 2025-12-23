@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, Environment, Sparkles } from '@react-three/drei';
+import { OrbitControls, Stars, Environment, Sparkles, Text, Billboard, Hud } from '@react-three/drei';
 import * as THREE from 'three';
 import TreeMesh from './TreeMesh';
 import SpiralDecor from './SpiralDecor';
@@ -23,7 +23,7 @@ interface SceneProps {
   focusedPhoto: PhotoData | null;
   isRecording?: boolean;
   recordingType?: 'FULL' | 'ALBUM' | null;
-  photos: PhotoData[];
+  userName?: string;
 }
 
 const CameraController: React.FC<{ 
@@ -189,11 +189,12 @@ const Scene: React.FC<SceneProps> = ({
     onDelete,
     controlMode,  
     interactionMode, 
-    zoomLevel, 
+    zoomLevel,
     panOffset, 
     focusedPhoto,
     isRecording = false,
-    recordingType = null
+    recordingType = null,
+    userName = ''
 }) => {
   return (
     <Canvas
@@ -235,6 +236,27 @@ const Scene: React.FC<SceneProps> = ({
       {/* Global Snow Effect */}
       <Snow />
 
+      {/* Cinematic Greeting for Video Recording - Stays fixed on screen during capture */}
+      {isRecording && (
+        <Hud>
+          <orthographicCamera makeDefault position={[0, 0, 10]} />
+          <group position={[0, 4, 0]}>
+            <Text
+              font="https://fonts.gstatic.com/s/greatvibes/v15/RWm0oG3Wwu8bG_Y9uOevYBRmKvnX96U.woff"
+              fontSize={0.8}
+              color="#fff1a1"
+              anchorX="center"
+              anchorY="top"
+              outlineWidth={0.02}
+              outlineColor="#000000"
+            >
+              {`Merry Christmas${userName ? ` ${userName}` : ''}!`}
+            </Text>
+          </group>
+        </Hud>
+      )}
+
+      {/* 3D Scene Elements */}
       <group position={[0, -2, 0]}>
         <TreeMesh />
         <SpiralDecor />
