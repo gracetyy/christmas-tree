@@ -1,76 +1,51 @@
-# 🎄 Lumière Christmas Tree
+# 🎄 Make your own 3D Christmas Tree with your photos!
 
-An interactive, 3D Christmas tree experience built with React, Three.js, and MediaPipe. 
+Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos, complete with festive music and magic controls.
 
 ![Christmas Tree Preview](https://github.com/gracetyy/christmas-tree/raw/main/preview.png) *(Placeholder)*
 
-## ✨ Features
+## ✨ Why You'll Love This
 
-- **Interactive 3D Tree**: A lush, particle-based Christmas tree with dynamic decorations.
-- **Photo Ornaments**: Hang your own memories on the tree!
-  - **Local Upload**: Select photos from your device.
-  - **Instagram Integration**: Import your latest posts directly.
-- **Advanced Controls**:
-  - **Mouse Mode**: Standard orbit and click-to-zoom controls.
-  - **Hand Gesture Mode**: Control the tree with your hands via webcam (powered by MediaPipe).
-    - 👋 **Open Hand**: Pan the view.
-    - ✌️ **Spread Fingers**: Zoom In.
-    - 🤏 **Pinch Fingers**: Zoom Out.
-- **Customizable Experience**:
-  - Toggle background music (Jingle Bells).
-  - Fullscreen mode for immersive viewing.
-  - Edit mode to rearrange or delete photos.
-  - Hide UI for a clean, cinematic look.
-- **Snapshot Tool**: Download a high-quality "Merry Christmas" postcard of your decorated tree.
+- **📸 Your Photos, Your Tree**: Simply upload photos from your phone or computer, or instantly import them from your **Instagram** profile!
+- **🖐️ Magic Hand Controls**: Switch to "Hand Mode" and control the camera just by moving your hands in front of your webcam. Pinch to zoom, spread to zoom in, and wave to look around!
+- **🎬 Create Cinematic Videos**: With one click, you can record a high-quality video of your decorated tree. Choose between a **360° rotation** or a **cinematic tour** that zooms into every single photo.
+- **🎵 Festive Vibes**: Enjoy a high-quality version of "Jingle Bells" that plays automatically as you decorate.
+- **🖼️ Instant Postcards**: Take a beautiful high-definition snapshot of your tree with a custom "Merry Christmas" greeting to share with friends and family.
+- **👤 Personalized Greeting**: Enter your name to see a custom "Merry Christmas [Your Name]!" message right at the top of the tree.
 
-## 🚀 Getting Started
+---
+
+## 🚀 How to Run It (For Developers)
 
 ### Prerequisites
-
 - Node.js (v18+)
-- npm or yarn
+- npm
 
-### Installation
-
-1. Clone the repository:
+### Quick Start
+1. **Clone & Enter**:
    ```bash
    git clone https://github.com/gracetyy/christmas-tree.git
    cd christmas-tree
    ```
-
-2. Install dependencies:
+2. **Install**:
    ```bash
    npm install
    ```
-
-3. Start the development server:
+3. **Launch**:
    ```bash
    npm run dev
    ```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 🛠️ Tech Stack
-
-- **Framework**: [React](https://reactjs.org/)
-- **3D Engine**: [Three.js](https://threejs.org/) via [@react-three/fiber](https://github.com/pmndrs/react-three-fiber)
-- **UI Components**: [@react-three/drei](https://github.com/pmndrs/drei), [Tailwind CSS](https://tailwindcss.com/)
-- **Hand Tracking**: [MediaPipe Hands](https://google.github.io/mediapipe/solutions/hands.html)
-- **Icons**: [Lucide React](https://lucide.dev/)
-
-## 📝 Documentation
-
-### Controls
-- **Double Click**: Automatically zoom out to the full tree view.
-- **Show/Hide UI**: Use the eye icon in the bottom control bar to toggle the interface for presentations.
-
-### Instagram Integration
-The app uses a secure webhook to fetch public Instagram media. Simply enter a username in the modal to populate the tree with their recent photos.
-
-## 📄 License
-
-This project is licensed under the MIT License.
+4. **View**: Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
+
+## 🛠️ Built With
+- **React & Three.js**: For the smooth 3D graphics.
+- **MediaPipe**: For the "magic" hand gesture tracking.
+- **Tailwind CSS**: For the clean "liquid glass" user interface.
+
+## 📄 License
+This project is open-source and licensed under the MIT License.
+
 🎵 Music: "Jingle Bells" by Kevin MacLeod (incompetech.com)  
 Licensed under Creative Commons: By Attribution 3.0
