@@ -35,14 +35,14 @@ const InstagramModal: React.FC<InstagramModalProps> = ({ isOpen, onClose, onSubm
           <X size={24} />
         </button>
 
-        <div className="p-8">
+        <div className="p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] rounded-xl shadow-lg">
-                <Instagram className="text-white" size={24} />
+            <div className="p-2.5 md:p-3 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] rounded-xl shadow-lg">
+                <Instagram className="text-white w-5 h-5 md:w-6 md:h-6" />
             </div>
             <div>
-                <h2 className="text-2xl font-light text-white">Import Memories</h2>
-                <p className="text-white/40 text-sm">Create a festive tree from Instagram</p>
+                <h2 className="text-xl md:text-2xl font-light text-white">Import Memories</h2>
+                <p className="text-white/40 text-xs md:text-sm">Create a festive tree from Instagram</p>
             </div>
           </div>
 
