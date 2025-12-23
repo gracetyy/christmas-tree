@@ -137,13 +137,13 @@ const Star: React.FC = () => {
       {/* Hover Message */}
       {hovered && (
         <Html position={[0, 2.5, 0]} center distanceFactor={10}>
-          <div className="whitespace-nowrap bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-2xl animate-in zoom-in duration-300 pointer-events-none">
-            <div className="flex items-center gap-2 text-[#fff1a1] font-medium text-sm">
-              <Github size={14} className="text-white" />
+          <div className="whitespace-nowrap bg-black/90 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 shadow-2xl animate-in zoom-in duration-300 pointer-events-none">
+            <div className="flex items-center gap-3 text-[#fff1a1] font-semibold text-base md:text-lg drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+              <Github size={18} className="text-white" />
               <span>Please star our repo! &lt;3</span>
               {starCount !== null && (
-                <div className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-full text-[10px] text-white/70">
-                  <StarIcon size={10} fill="currentColor" />
+                <div className="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full text-xs text-white/80 border border-white/10">
+                  <StarIcon size={12} fill="currentColor" />
                   {starCount}
                 </div>
               )}
