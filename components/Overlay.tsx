@@ -211,7 +211,7 @@ const Overlay: React.FC<OverlayProps> = ({
           </button>
         ) : (
           /* Main Control Panel */
-          <div className="flex flex-col items-center gap-3 w-full max-w-full overflow-x-hidden">
+          <div className="flex flex-col items-center gap-3 w-full max-w-full">
             
             {/* Top Row: System & View Settings - Flexible layout */}
             <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-1 md:gap-2">
@@ -359,17 +359,19 @@ const Overlay: React.FC<OverlayProps> = ({
                 
                 {/* Dropdown Menu */}
                 {!isRecording && (
-                  <div className="absolute bottom-full left-0 mb-2 w-40 md:w-48 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-44 md:w-56 bg-black/95 backdrop-blur-2xl border border-white/20 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
                     <button 
                       onClick={() => onRecordVideo('FULL')}
-                      className="w-full text-left px-4 py-3 text-[10px] md:text-xs font-medium text-white hover:bg-white/10 transition-colors border-b border-white/5"
+                      className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors border-b border-white/10 flex items-center gap-3"
                     >
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                       360° Rotation
                     </button>
                     <button 
                       onClick={() => onRecordVideo('ALBUM')}
-                      className="w-full text-left px-4 py-3 text-[10px] md:text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                      className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors flex items-center gap-3"
                     >
+                      <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
                       Cinematic Tour
                     </button>
                   </div>

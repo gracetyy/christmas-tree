@@ -207,7 +207,7 @@ const Scene: React.FC<SceneProps> = ({
         preserveDrawingBuffer: true, // required for clean downloads
         powerPreference: 'high-performance',
       }}
-      style={{ background: COLORS.BACKGROUND }}
+      style={{ background: COLORS.BACKGROUND, position: 'relative', zIndex: 0 }}
     >
       <CameraController 
         zoomLevel={zoomLevel} 
