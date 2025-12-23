@@ -1,0 +1,7 @@
+{
+  "name": "Lumière Christmas Tree",
+  "description": "An interactive 3D Christmas tree with gesture control and photo memories.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
