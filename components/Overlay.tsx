@@ -101,13 +101,19 @@ const Overlay: React.FC<OverlayProps> = ({
   };
 
   const handleShare = () => {
-    const url = new URL(window.location.href);
-    if (userName) url.searchParams.set('name', userName);
-    // Note: Instagram photos are not shared via URL as they are base64/large, 
-    // but we could store the IG username if we implemented persistent scraping.
+    const url = new URL(window.location.origin + window.location.pathname);
+    if (userName) {
+        // Base64 encode the name to create a "code" (looks like random characters)
+        try {
+            const encodedName = btoa(encodeURIComponent(userName));
+            url.searchParams.set('code', encodedName);
+        } catch (e) {
+            url.searchParams.set('name', userName);
+        }
+    }
     
     navigator.clipboard.writeText(url.toString()).then(() => {
-        alert('Shareable link copied to clipboard!');
+        alert(`Shareable link copied to clipboard!\n\nYour Tree Code: ${url.searchParams.get('code') || userName}`);
     }).catch(err => {
         console.error('Failed to copy URL:', err);
     });

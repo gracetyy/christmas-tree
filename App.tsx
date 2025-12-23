@@ -34,8 +34,20 @@ const App: React.FC = () => {
   useEffect(() => {
     // Check for URL parameters
     const params = new URLSearchParams(window.location.search);
+    
+    // Support both direct 'name' and encoded 'code'
     const nameParam = params.get('name');
-    if (nameParam) {
+    const codeParam = params.get('code');
+
+    if (codeParam) {
+        try {
+            const decodedName = decodeURIComponent(atob(codeParam));
+            setUserName(decodedName);
+            setIsNameSet(true);
+        } catch (e) {
+            console.error("Failed to decode share code", e);
+        }
+    } else if (nameParam) {
         setUserName(decodeURIComponent(nameParam));
         setIsNameSet(true);
     }
