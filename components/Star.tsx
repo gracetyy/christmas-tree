@@ -1,26 +1,3 @@
-import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Billboard, Sparkles } from '@react-three/drei';
-import * as THREE from 'three';
-import { COLORS, TREE_CONFIG } from '../constants';
-
-const GlowTexture = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-        gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
-        gradient.addColorStop(0.2, 'rgba(255, 220, 100, 0.5)');
-        gradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.1)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 128, 128);
-    }
-    return new THREE.CanvasTexture(canvas);
-}
-
 import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Sparkles, Html } from '@react-three/drei';
@@ -189,7 +166,5 @@ const Star: React.FC = () => {
     </group>
   );
 };
-
-export default Star;
 
 export default Star;
