@@ -244,13 +244,6 @@ const Overlay: React.FC<OverlayProps> = ({
                     <Maximize size={18} />
                 </button>
                 <button
-                  onClick={() => window.open('https://github.com/gracetyy/christmas-tree', '_blank')}
-                  className="flex items-center justify-center w-10 h-10 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
-                  title="Star us on GitHub!"
-                >
-                    <Github size={18} />
-                </button>
-                <button
                   onClick={() => setShowUI(false)}
                   className="flex items-center justify-center w-10 h-10 rounded-full text-white hover:bg-white/10 transition-all"
                   title="Hide Buttons"
@@ -321,10 +314,23 @@ const Overlay: React.FC<OverlayProps> = ({
               {/* Download Button */}
               <button 
                   onClick={handleDownload}
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-all text-white hover:bg-white/10"
-                  title="Download Tree Photo"
+                  className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
+                  title="Download Tree Screenshot"
               >
                   <Download size={18} className="text-[#1cbd62]" />
+                  <span className="text-sm font-medium whitespace-nowrap text-white/90">Download Screenshot</span>
+            </button>
+
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+            {/* GitHub Star Button */}
+            <button
+              onClick={() => window.open('https://github.com/gracetyy/christmas-tree', '_blank')}
+              className="flex items-center gap-2 px-5 py-2 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
+              title="Star our repo!"
+            >
+                <Github size={18} />
+                <span className="text-sm font-medium whitespace-nowrap text-white/90">Star our repo!</span>
             </button>
 
             <input 
