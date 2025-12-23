@@ -1,27 +1,43 @@
 # 🎄 Make your own 3D Christmas Tree with your photos!
 
-Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos, complete with festive music and magic controls.
+Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos.
 
-![Christmas Tree Preview](https://github.com/gracetyy/christmas-tree/raw/main/preview.png) *(Placeholder)*
+## ✨ Features
 
-## ✨ Why You'll Love This
-
-- **📸 Your Photos, Your Tree**: Simply upload photos from your phone or computer, or instantly import them from your **Instagram** profile!
-- **🖐️ Magic Hand Controls**: Switch to "Hand Mode" and control the camera just by moving your hands in front of your webcam. Pinch to zoom, spread to zoom in, and wave to look around!
-- **🎬 Create Cinematic Videos**: With one click, you can record a high-quality video of your decorated tree. Choose between a **360° rotation** or a **cinematic tour** that zooms into every single photo.
-- **🎵 Festive Vibes**: Enjoy a high-quality version of "Jingle Bells" that plays automatically as you decorate.
-- **🖼️ Instant Postcards**: Take a beautiful high-definition snapshot of your tree with a custom "Merry Christmas" greeting to share with friends and family.
-- **👤 Personalized Greeting**: Enter your name to see a custom "Merry Christmas [Your Name]!" message right at the top of the tree.
+- **📸 Your Photos, Your Tree**: Upload photos from your device or instantly import them from any **Instagram** profile!
+- **🖐️ Magic Hand Controls**: Control the camera with hand gestures in front of your webcam.
+- **🎬 Cinematic Videos**: Record high-quality videos of your tree (360° rotation or cinematic tour).
+- **🖼️ Instant Postcards**: Download a high-definition snapshot of your tree with a custom "Merry Christmas" greeting.
+- **👤 Personalized Greeting**: Enter your name to see a custom "Merry Christmas [Your Name]!" message.
 
 ---
 
-## 🚀 How to Run It (For Developers)
+## 🖐️ Hand Mode Tutorial
 
-### Prerequisites
-- Node.js (v18+)
-- npm
+Switch to **Hand Mode** in the bottom menu to control the tree with "magic":
 
-### Quick Start
+1. **Zoom In**: Open your palm with fingers spread 🖐️
+2. **Zoom Out / Reset**: Close your hand into a fist ✊
+3. **Move / Pan**: While your hand is open, move it around to look at different parts of the tree.
+
+### 🧠 How Hand Mode Works (The "Principle")
+This feature uses **MediaPipe Hands**, a high-fidelity palm and finger tracking solution by Google. 
+- It works by performing real-time AI inference on your webcam feed.
+- It identifies **21 3D hand landmarks** (joints). 
+- Our script calculates the distance between your thumb and index finger, and counts how many fingers are curled, to translate those shapes into 3D camera movements in **Three.js**.
+
+---
+
+## 📸 Instagram Import (How it works)
+When you enter a username:
+1. A backend service uses a **Headless Browser (Puppeteer/Playwright)** or a **Scraping API** to visit the public Instagram profile.
+2. It identifies the most recent high-quality image URLs from the profile's grid.
+3. These images are processed and sent back to the app to be instantly "hung" as Polaroids on the 3D tree.
+
+---
+
+## 🚀 Quick Start (For Developers)
+
 1. **Clone & Enter**:
    ```bash
    git clone https://github.com/gracetyy/christmas-tree.git
@@ -40,12 +56,9 @@ Transform your favorite memories into a magical, interactive 3D holiday experien
 ---
 
 ## 🛠️ Built With
-- **React & Three.js**: For the smooth 3D graphics.
-- **MediaPipe**: For the "magic" hand gesture tracking.
-- **Tailwind CSS**: For the clean "liquid glass" user interface.
+- **React & Three.js (React Three Fiber)**: For rendering the 3D scene.
+- **MediaPipe**: For the AI hand gesture tracking.
+- **Tailwind CSS**: For the user interface.
 
 ## 📄 License
-This project is open-source and licensed under the MIT License.
-
-🎵 Music: "Jingle Bells" by Kevin MacLeod (incompetech.com)  
-Licensed under Creative Commons: By Attribution 3.0
+MIT License.
