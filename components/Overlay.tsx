@@ -93,17 +93,45 @@ const Overlay: React.FC<OverlayProps> = ({
   };
 
   const [showUI, setShowUI] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [isNameSet, setIsNameSet] = useState(false);
 
   return (
     <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
       
       {/* Top Header - Just the Title */}
-      <div className="flex justify-center items-start w-full relative pt-4">
+      <div className="flex flex-col justify-center items-center w-full relative pt-4">
         <div className="pointer-events-auto text-center whitespace-nowrap">
           <h1 className="text-6xl text-[#fff1a1]" style={{ fontFamily: "'Great Vibes', cursive", textShadow: '0 0 20px rgba(255, 241, 161, 0.5)' }}>
-            Merry Christmas!
+            Merry Christmas{userName ? ` ${userName}` : ''}!
           </h1>
         </div>
+
+        {!isNameSet && showUI && (
+          <div className="pointer-events-auto mt-4 flex flex-col items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-700">
+            <p className="text-[#fff1a1]/60 text-[10px] uppercase tracking-[0.2em] font-bold">What's your name?</p>
+            <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/10 shadow-lg group focus-within:border-white/30 transition-all">
+              <input 
+                type="text"
+                placeholder="Enter your name..."
+                className="bg-transparent text-white text-sm outline-none w-32 placeholder:text-white/20"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && userName.trim()) {
+                    setIsNameSet(true);
+                  }
+                }}
+              />
+              <button 
+                onClick={() => userName.trim() && setIsNameSet(true)}
+                className="text-[#fff1a1] hover:text-white transition-colors"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Instructions Pane - Stays on the right side */}
