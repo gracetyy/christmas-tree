@@ -141,34 +141,36 @@ const Polaroid: React.FC<PolaroidProps> = ({
         </mesh>
       </group>
       
-      {/* Interaction UI (Hidden Input & Delete Button) */}
-      <Html position={[0.5, -1.4, 0.1]} transform occlude style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>
-        <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
-              accept="image/*" 
-              onChange={handleFileChange}
-            />
-            
-            {interactionMode === InteractionMode.EDIT && (
-                 <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        // Prevent click from propagating to group
-                        e.preventDefault();
-                        onDelete(data.id);
-                    }}
-                    className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"
-                    title="Delete Photo"
-                    style={{ pointerEvents: 'auto' }}
-                 >
-                    <Trash2 size={14} />
-                 </button>
-            )}
-        </div>
-      </Html>
+      {/* Interaction UI (Hidden Input & Delete Button) - Only render when needed for performance */}
+      {(hovered || (interactionMode === InteractionMode.EDIT && isZoomedIn)) && (
+        <Html position={[0.5, -1.4, 0.1]} transform style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.2s', pointerEvents: hovered ? 'auto' : 'none' }}>
+          <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept="image/*" 
+                onChange={handleFileChange}
+              />
+              
+              {interactionMode === InteractionMode.EDIT && (
+                   <button
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          // Prevent click from propagating to group
+                          e.preventDefault();
+                          onDelete(data.id);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"
+                      title="Delete Photo"
+                      style={{ pointerEvents: 'auto' }}
+                   >
+                      <Trash2 size={14} />
+                   </button>
+              )}
+          </div>
+        </Html>
+      )}
     </group>
   );
 };

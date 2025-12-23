@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -175,62 +175,62 @@ const Overlay: React.FC<OverlayProps> = ({
             
             {/* Top Row: System & View Settings */}
             <div className="flex bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-2xl items-center gap-2">
-              {/* Music Control */}
-              <button
-                onClick={toggleMusic}
+             {/* Music Control */}
+            <button
+               onClick={toggleMusic}
                 className="flex items-center justify-center w-10 h-10 rounded-full text-white hover:bg-white/10 transition-all"
-                title={isMusicPlaying ? "Pause Music" : "Play Music"}
-              >
-                  {isMusicPlaying ? <Music size={18} /> : <VolumeX size={18} />}
-              </button>
+               title={isMusicPlaying ? "Pause Music" : "Play Music"}
+            >
+                {isMusicPlaying ? <Music size={18} /> : <VolumeX size={18} />}
+            </button>
 
               <div className="w-px h-4 bg-white/10 mx-1"></div>
 
-              {/* Input Control Toggle */}
+            {/* Input Control Toggle */}
               <div className="flex bg-white/5 rounded-full p-0.5">
-                <button
-                  onClick={() => setControlMode(ControlMode.MOUSE)}
+              <button
+                onClick={() => setControlMode(ControlMode.MOUSE)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all ${
-                    controlMode === ControlMode.MOUSE ? 'bg-white text-black shadow-lg' : 'text-white hover:bg-white/10'
-                  }`}
-                >
+                  controlMode === ControlMode.MOUSE ? 'bg-white text-black shadow-lg' : 'text-white hover:bg-white/10'
+                }`}
+              >
                   <Mouse size={14} />
                   <span className="text-xs font-medium">Mouse</span>
-                </button>
-                <button
-                  onClick={() => setControlMode(ControlMode.HAND)}
+              </button>
+              <button
+                onClick={() => setControlMode(ControlMode.HAND)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all ${
-                    controlMode === ControlMode.HAND ? 'bg-[#1cbd62] text-white shadow-lg' : 'text-white hover:bg-white/10'
-                  }`}
-                >
+                  controlMode === ControlMode.HAND ? 'bg-[#1cbd62] text-white shadow-lg' : 'text-white hover:bg-white/10'
+                }`}
+              >
                   <Hand size={14} />
                   <span className="text-xs font-medium">Hand</span>
-                </button>
-              </div>
+              </button>
+            </div>
 
               <div className="w-px h-4 bg-white/10 mx-1"></div>
 
               {/* Interaction Mode Toggle */}
               <div className="flex bg-white/5 rounded-full p-0.5">
-                <button
-                  onClick={() => setInteractionMode(InteractionMode.VIEW)}
+              <button
+                onClick={() => setInteractionMode(InteractionMode.VIEW)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all ${
-                    interactionMode === InteractionMode.VIEW ? 'bg-[#f2e24e] text-black shadow-lg' : 'text-white hover:bg-white/10'
-                  }`}
-                >
+                  interactionMode === InteractionMode.VIEW ? 'bg-[#f2e24e] text-black shadow-lg' : 'text-white hover:bg-white/10'
+                }`}
+              >
                   <Eye size={14} />
                   <span className="text-xs font-medium">View</span>
-                </button>
-                <button
-                  onClick={() => setInteractionMode(InteractionMode.EDIT)}
+              </button>
+              <button
+                onClick={() => setInteractionMode(InteractionMode.EDIT)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all ${
-                    interactionMode === InteractionMode.EDIT ? 'bg-[#ff421c] text-white shadow-lg' : 'text-white hover:bg-white/10'
-                  }`}
-                >
+                  interactionMode === InteractionMode.EDIT ? 'bg-[#ff421c] text-white shadow-lg' : 'text-white hover:bg-white/10'
+                }`}
+              >
                   <Edit3 size={14} />
                   <span className="text-xs font-medium">Edit</span>
-                </button>
-              </div>
+              </button>
+          </div>
 
               <div className="w-px h-4 bg-white/10 mx-1"></div>
 
@@ -244,6 +244,13 @@ const Overlay: React.FC<OverlayProps> = ({
                     <Maximize size={18} />
                 </button>
                 <button
+                  onClick={() => window.open('https://github.com/gracetyy/christmas-tree', '_blank')}
+                  className="flex items-center justify-center w-10 h-10 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
+                  title="Star us on GitHub!"
+                >
+                    <Github size={18} />
+                </button>
+                <button
                   onClick={() => setShowUI(false)}
                   className="flex items-center justify-center w-10 h-10 rounded-full text-white hover:bg-white/10 transition-all"
                   title="Hide Buttons"
@@ -251,7 +258,7 @@ const Overlay: React.FC<OverlayProps> = ({
                     <EyeOff size={18} />
                 </button>
               </div>
-            </div>
+      </div>
 
             {/* Bottom Row: Content Actions */}
             <div className="flex bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/20 shadow-2xl items-center gap-1">
@@ -289,20 +296,20 @@ const Overlay: React.FC<OverlayProps> = ({
                   </>
               )}
 
-              {/* Local Upload */}
-              <button 
-                  onClick={triggerBulkUpload}
+             {/* Local Upload */}
+            <button 
+                onClick={triggerBulkUpload}
                   className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
-              >
+            >
                   <ImagePlus size={18} className="text-[#f2e24e]" />
                   <span className="text-sm font-medium whitespace-nowrap text-white/90">Add Photos</span>
-              </button>
+            </button>
               
               <div className="w-px h-6 bg-white/10 mx-1"></div>
-
-              {/* Instagram Import */}
-              <button 
-                  onClick={onOpenInstagram}
+            
+            {/* Instagram Import */}
+            <button 
+                onClick={onOpenInstagram}
                   className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
               >
                   <Instagram size={18} className="text-[#fd1d1d]" />
@@ -318,18 +325,18 @@ const Overlay: React.FC<OverlayProps> = ({
                   title="Download Tree Photo"
               >
                   <Download size={18} className="text-[#1cbd62]" />
-              </button>
+            </button>
 
-              <input 
-                  type="file" 
-                  multiple 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  accept="image/*"
-                  onChange={(e) => e.target.files && onBulkUpload(e.target.files)}
-              />
-            </div>
-          </div>
+            <input 
+                type="file" 
+                multiple 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={(e) => e.target.files && onBulkUpload(e.target.files)}
+            />
+         </div>
+         </div>
         )}
       </div>
     </div>
