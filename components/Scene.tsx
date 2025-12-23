@@ -240,17 +240,19 @@ const Scene: React.FC<SceneProps> = ({
       {isRecording && (
         <Hud>
           <orthographicCamera makeDefault position={[0, 0, 10]} />
-          <group position={[0, 4, 0]}>
+          <group position={[0, 4.2, 0]}>
             <Text
               font="https://fonts.gstatic.com/s/greatvibes/v15/RWm0oG3Wwu8bG_Y9uOevYBRmKvnX96U.woff"
-              fontSize={0.8}
+              fontSize={1.2}
               color="#fff1a1"
               anchorX="center"
               anchorY="top"
-              outlineWidth={0.02}
+              outlineWidth={0.03}
               outlineColor="#000000"
+              maxWidth={10}
+              textAlign="center"
             >
-              {`Merry Christmas${userName ? ` ${userName}` : ''}!`}
+              {`Merry Christmas\n${userName || 'everyone'}!`}
             </Text>
           </group>
         </Hud>

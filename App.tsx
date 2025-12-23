@@ -58,6 +58,10 @@ const App: React.FC = () => {
     if (!audio) return;
 
     audio.volume = 0.8;
+    
+    // Explicitly set source and load
+    audio.src = "/assets/music/christmas-song.mp3";
+    audio.load();
 
     const attemptPlay = (e?: Event) => {
       // If clicking the music toggle button, let toggleMusic handle it
@@ -66,36 +70,37 @@ const App: React.FC = () => {
         if (target.closest('button[title*="Music"]')) return;
       }
 
-      audio.play()
-        .then(() => {
-          setIsMusicPlaying(true);
-          removeListeners();
-        })
-        .catch(err => {
-          console.log("Autoplay still waiting for interaction...", err);
-        });
+      // Try to play
+      const playPromise = audio.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Audio started successfully");
+            setIsMusicPlaying(true);
+            removeListeners();
+          })
+          .catch(err => {
+            console.log("Playback failed, still waiting for user interaction", err);
+          });
+      }
     };
 
     const removeListeners = () => {
-      window.removeEventListener('click', attemptPlay);
-      window.removeEventListener('touchstart', attemptPlay);
-      window.removeEventListener('mousedown', attemptPlay);
-      window.removeEventListener('keydown', attemptPlay);
+      window.removeEventListener('click', attemptPlay, true);
+      window.removeEventListener('touchstart', attemptPlay, true);
+      window.removeEventListener('mousedown', attemptPlay, true);
+      window.removeEventListener('keydown', attemptPlay, true);
     };
 
-    // 1. Initial attempt
+    // 1. Immediate attempt
     attemptPlay();
 
-    // 2. Add listeners for backup
-    window.addEventListener('click', attemptPlay);
-    window.addEventListener('touchstart', attemptPlay);
-    window.addEventListener('mousedown', attemptPlay);
-    window.addEventListener('keydown', attemptPlay);
-
-    // Load Google Drive API
-    loadGoogleApi()
-      .then(() => setIsGoogleApiReady(true))
-      .catch(err => console.log("Google API load status:", err.message));
+    // 2. Interaction listeners (using capture phase to be sure)
+    window.addEventListener('click', attemptPlay, true);
+    window.addEventListener('touchstart', attemptPlay, true);
+    window.addEventListener('mousedown', attemptPlay, true);
+    window.addEventListener('keydown', attemptPlay, true);
 
     return removeListeners;
   }, []);
