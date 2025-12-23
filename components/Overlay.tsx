@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, Edit3, Instagram } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, Edit3, Instagram, Download } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -35,19 +35,35 @@ const Overlay: React.FC<OverlayProps> = ({
     fileInputRef.current?.click();
   };
 
+  const handleDownload = () => {
+    const overlay = document.getElementById('overlay-container');
+    if (overlay) overlay.style.display = 'none';
+
+    setTimeout(() => {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            const link = document.createElement('a');
+            link.download = 'merry-christmas-tree.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        if (overlay) overlay.style.display = 'flex';
+    }, 50);
+  };
+
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
+    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
       
       {/* Top Header */}
-      <div className="flex justify-between items-start">
-        <div className="pointer-events-auto">
-          <h1 className="text-3xl font-light text-white tracking-widest uppercase" style={{ textShadow: '0 0 10px #fff1a1' }}>
-            Lumière
+      <div className="flex justify-end items-start w-full relative">
+        {/* Title - Centered */}
+        <div className="absolute left-1/2 top-0 transform -translate-x-1/2 pointer-events-auto text-center whitespace-nowrap">
+          <h1 className="text-6xl text-[#fff1a1]" style={{ fontFamily: "'Great Vibes', cursive", textShadow: '0 0 20px rgba(255, 241, 161, 0.5)' }}>
+            Merry Christmas!
           </h1>
-          <p className="text-white/60 text-sm mt-1">Interactive Memories</p>
         </div>
 
-        <div className="flex flex-col gap-3 items-end">
+        <div className="flex flex-col gap-3 items-end z-10">
           <div className="flex gap-3">
              {/* Music Control */}
             <button
@@ -81,8 +97,18 @@ const Overlay: React.FC<OverlayProps> = ({
             </div>
           </div>
 
-          {/* Interaction Mode Toggle (View/Edit) */}
-          <div className="flex bg-white/10 backdrop-blur-md rounded-full p-1 pointer-events-auto border border-white/20">
+          <div className="flex gap-3 items-center">
+            {zoomLevel === ZoomLevel.ZOOMED_IN && (
+                <button
+                  onClick={() => setZoomLevel(ZoomLevel.FULL_TREE)}
+                  className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-all pointer-events-auto shadow-lg text-sm font-medium"
+                >
+                  Show Full Tree
+                </button>
+            )}
+
+            {/* Interaction Mode Toggle (View/Edit) */}
+            <div className="flex bg-white/10 backdrop-blur-md rounded-full p-1 pointer-events-auto border border-white/20">
               <button
                 onClick={() => setInteractionMode(InteractionMode.VIEW)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
@@ -101,6 +127,7 @@ const Overlay: React.FC<OverlayProps> = ({
                 <Edit3 size={16} />
                 <span className="text-sm font-medium">Edit</span>
               </button>
+            </div>
           </div>
         </div>
       </div>
@@ -138,7 +165,7 @@ const Overlay: React.FC<OverlayProps> = ({
                 className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 px-6 py-3 rounded-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
             >
                 <ImagePlus size={20} className="text-[#f2e24e]" />
-                <span>Add Memories</span>
+                <span>Add your photos to the tree</span>
             </button>
             
             {/* Instagram Import */}
@@ -147,7 +174,16 @@ const Overlay: React.FC<OverlayProps> = ({
                 className="bg-gradient-to-br from-[#833ab4]/20 via-[#fd1d1d]/20 to-[#fcb045]/20 hover:from-[#833ab4]/40 hover:via-[#fd1d1d]/40 hover:to-[#fcb045]/40 text-white backdrop-blur-md border border-white/20 px-6 py-3 rounded-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95 shadow-lg"
             >
                 <Instagram size={20} className="text-[#fd1d1d]" />
-                <span>Instagram</span>
+                <span>Import photos from your Instagram!</span>
+            </button>
+
+            {/* Download Button */}
+            <button 
+                onClick={handleDownload}
+                className="bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 px-4 py-3 rounded-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg"
+                title="Download Tree Photo"
+            >
+                <Download size={20} className="text-[#1cbd62]" />
             </button>
 
             <input 

@@ -31,6 +31,7 @@ const CameraController: React.FC<{
   const { camera, controls } = useThree();
   const targetPos = useRef(CAMERA_CONFIG.DEFAULT_POS.clone());
   const lookAtTarget = useRef(CAMERA_CONFIG.LOOK_AT_OFFSET.clone());
+  const isAnimating = useRef(false);
 
   useEffect(() => {
     // Reset panning when switching modes or zoom levels
@@ -38,7 +39,12 @@ const CameraController: React.FC<{
       targetPos.current.copy(CAMERA_CONFIG.DEFAULT_POS);
       panOffset.current = { x: 0, y: 0 };
     }
-  }, [zoomLevel, controlMode]);
+    
+    // Start animation for Mouse Mode transitions (Zoom In or Out)
+    if (controlMode === ControlMode.MOUSE) {
+        isAnimating.current = true;
+    }
+  }, [zoomLevel, controlMode, focusedPhoto]);
 
   useFrame((state, delta) => {
     // 1. HAND CONTROL LOGIC (Gestures)
@@ -74,33 +80,44 @@ const CameraController: React.FC<{
       camera.lookAt(lookAtTarget.current);
     } 
     
-    // 2. MOUSE CONTROL LOGIC (Click to Zoom Animation)
-    else if (controlMode === ControlMode.MOUSE && focusedPhoto && zoomLevel === ZoomLevel.ZOOMED_IN) {
-        // When in mouse mode and a photo is focused, we override the orbit controls target
-        // to smoothly fly to the photo.
-        
+    // 2. MOUSE CONTROL LOGIC (Animation)
+    else if (controlMode === ControlMode.MOUSE && isAnimating.current) {
         if (controls) {
             const orbitControls = controls as any;
-            const photoPos = new THREE.Vector3(...focusedPhoto.position);
-            
-            // Move target to the photo
             const lerpSpeed = 4 * delta;
-            orbitControls.target.lerp(photoPos, lerpSpeed);
-            
-            // Calculate ideal camera position: In front of the photo
-            // The photo is on the spiral, facing outwards (rotation[1] is angle).
-            // We want to be some distance away from the photo along the normal.
-            const dist = 6; 
-            const angle = focusedPhoto.rotation[1];
-            // Position camera slightly above and in front
-            const camX = photoPos.x + Math.sin(angle) * dist;
-            const camZ = photoPos.z + Math.cos(angle) * dist;
-            const camY = photoPos.y; 
 
-            const idealPos = new THREE.Vector3(camX, camY, camZ);
-            camera.position.lerp(idealPos, lerpSpeed);
-            
-            orbitControls.update();
+            if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
+                // ZOOM IN TO PHOTO
+                const photoPos = new THREE.Vector3(...focusedPhoto.position);
+                
+                // Move target to the photo
+                orbitControls.target.lerp(photoPos, lerpSpeed);
+                
+                // Calculate ideal camera position
+                const dist = 6; 
+                const angle = focusedPhoto.rotation[1];
+                const camX = photoPos.x + Math.sin(angle) * dist;
+                const camZ = photoPos.z + Math.cos(angle) * dist;
+                const camY = photoPos.y; 
+
+                const idealPos = new THREE.Vector3(camX, camY, camZ);
+                camera.position.lerp(idealPos, lerpSpeed);
+                
+                orbitControls.update();
+
+                if (camera.position.distanceTo(idealPos) < 0.1 && orbitControls.target.distanceTo(photoPos) < 0.1) {
+                    isAnimating.current = false;
+                }
+            } else if (zoomLevel === ZoomLevel.FULL_TREE) {
+                // ZOOM OUT TO FULL TREE
+                orbitControls.target.lerp(CAMERA_CONFIG.LOOK_AT_OFFSET, lerpSpeed);
+                camera.position.lerp(CAMERA_CONFIG.DEFAULT_POS, lerpSpeed);
+                orbitControls.update();
+
+                if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.5) {
+                    isAnimating.current = false;
+                }
+            }
         }
     }
   });
@@ -111,7 +128,7 @@ const CameraController: React.FC<{
         enableZoom={true}
         enablePan={controlMode === ControlMode.MOUSE}
         minDistance={2}
-        maxDistance={60}
+        maxDistance={100}
         target={CAMERA_CONFIG.LOOK_AT_OFFSET}
         makeDefault
     />
@@ -132,7 +149,7 @@ const Scene: React.FC<SceneProps> = ({
     <Canvas
       shadows
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
-      gl={{ antialias: true, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.2 }}
+      gl={{ antialias: true, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.2, preserveDrawingBuffer: true }}
       style={{ background: COLORS.BACKGROUND }}
     >
       <CameraController 

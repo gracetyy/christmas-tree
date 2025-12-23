@@ -124,6 +124,20 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (isInstaModalOpen) return;
+
+    // Prevent zooming out when interacting with UI
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input')) {
+        return;
+    }
+
+    if (zoomLevel === ZoomLevel.ZOOMED_IN) {
+        setZoomLevel(ZoomLevel.FULL_TREE);
+    }
+  };
+
   const handleSingleUpload = (id: string, file: File) => {
     const url = URL.createObjectURL(file);
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, url } : p));
@@ -234,7 +248,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full bg-[#050505]">
+    <div 
+      className="relative w-full h-full bg-[#050505]"
+      onDoubleClick={handleDoubleClick}
+    >
       <audio 
         ref={audioRef} 
         src="https://upload.wikimedia.org/wikipedia/commons/e/e6/Jingle_Bells_-_Kevin_MacLeod.ogg" 
