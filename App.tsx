@@ -14,6 +14,8 @@ const App: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(ZoomLevel.FULL_TREE);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [focusedPhoto, setFocusedPhoto] = useState<PhotoData | null>(null);
+  const [userName, setUserName] = useState('');
+  const [isNameSet, setIsNameSet] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -28,8 +30,16 @@ const App: React.FC = () => {
   const [instaLoading, setInstaLoading] = useState(false);
   const [instaStatus, setInstaStatus] = useState('');
 
-  // Initialize Photos
+  // Initialize Photos and URL Params
   useEffect(() => {
+    // Check for URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get('name');
+    if (nameParam) {
+        setUserName(decodeURIComponent(nameParam));
+        setIsNameSet(true);
+    }
+
     const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
     const initialPhotos: PhotoData[] = positions.map((pos, index) => {
       // Rotate through placeholder types
@@ -72,28 +82,40 @@ const App: React.FC = () => {
 
   // More aggressive retry for autoplay on any interaction
   useEffect(() => {
-    const startAudio = () => {
-      if (audioRef.current && audioRef.current.paused) {
+    let hasInteracted = false;
+
+    const startAudio = (e: Event) => {
+      // If clicking a button, let the button's own handler deal with it
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) return;
+
+      if (!hasInteracted && audioRef.current && audioRef.current.paused) {
+         hasInteracted = true;
          audioRef.current.muted = false;
          audioRef.current.play()
-           .then(() => setIsMusicPlaying(true))
+           .then(() => {
+             setIsMusicPlaying(true);
+             cleanup();
+           })
            .catch((err) => console.error("Playback failed even after interaction:", err));
       }
     };
 
-    // Add multiple listeners to ensure capture of first interaction
-    window.addEventListener('mousedown', startAudio, { once: true });
-    window.addEventListener('keydown', startAudio, { once: true });
-    window.addEventListener('touchstart', startAudio, { once: true });
-    window.addEventListener('click', startAudio, { once: true });
-
-    return () => {
+    const cleanup = () => {
         window.removeEventListener('mousedown', startAudio);
         window.removeEventListener('keydown', startAudio);
         window.removeEventListener('touchstart', startAudio);
         window.removeEventListener('click', startAudio);
     };
-  }, [isMusicPlaying]);
+
+    // Add multiple listeners to ensure capture of first interaction
+    window.addEventListener('mousedown', startAudio);
+    window.addEventListener('keydown', startAudio);
+    window.addEventListener('touchstart', startAudio);
+    window.addEventListener('click', startAudio);
+
+    return cleanup;
+  }, []); // Only run once on mount
 
   // Clear focused photo when zooming out
   useEffect(() => {
@@ -336,6 +358,10 @@ const App: React.FC = () => {
         isHandReady={isHandReady}
         isMusicPlaying={isMusicPlaying}
         toggleMusic={toggleMusic}
+        userName={userName}
+        setUserName={setUserName}
+        isNameSet={isNameSet}
+        setIsNameSet={setIsNameSet}
       />
 
       <InstagramModal 

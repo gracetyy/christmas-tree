@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Share2 } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -16,6 +16,10 @@ interface OverlayProps {
   isHandReady: boolean;
   isMusicPlaying: boolean;
   toggleMusic: () => void;
+  userName: string;
+  setUserName: (name: string) => void;
+  isNameSet: boolean;
+  setIsNameSet: (set: boolean) => void;
 }
 
 const Overlay: React.FC<OverlayProps> = ({ 
@@ -31,7 +35,11 @@ const Overlay: React.FC<OverlayProps> = ({
   setZoomLevel,
   isHandReady,
   isMusicPlaying,
-  toggleMusic
+  toggleMusic,
+  userName,
+  setUserName,
+  isNameSet,
+  setIsNameSet
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,10 +76,10 @@ const Overlay: React.FC<OverlayProps> = ({
                 ctx.shadowColor = 'rgba(255, 241, 161, 0.5)';
                 ctx.shadowBlur = 20;
                 
-                ctx.fillText("Merry Christmas!", tempCanvas.width / 2, canvas.height * 0.05);
+                ctx.fillText(`Merry Christmas${userName ? ` ${userName}` : ''}!`, tempCanvas.width / 2, canvas.height * 0.05);
 
                 const link = document.createElement('a');
-                link.download = 'merry-christmas-tree.png';
+                link.download = `merry-christmas-${userName || 'tree'}.png`;
                 link.href = tempCanvas.toDataURL('image/png');
                 link.click();
             }
@@ -92,9 +100,20 @@ const Overlay: React.FC<OverlayProps> = ({
     }
   };
 
+  const handleShare = () => {
+    const url = new URL(window.location.href);
+    if (userName) url.searchParams.set('name', userName);
+    // Note: Instagram photos are not shared via URL as they are base64/large, 
+    // but we could store the IG username if we implemented persistent scraping.
+    
+    navigator.clipboard.writeText(url.toString()).then(() => {
+        alert('Shareable link copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy URL:', err);
+    });
+  };
+
   const [showUI, setShowUI] = useState(true);
-  const [userName, setUserName] = useState('');
-  const [isNameSet, setIsNameSet] = useState(false);
 
   return (
     <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
@@ -338,6 +357,18 @@ const Overlay: React.FC<OverlayProps> = ({
               </button>
 
               <div className="w-px h-6 bg-white/10 mx-1"></div>
+
+              {/* Share Button */}
+              <button 
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
+                  title="Copy Shareable Link"
+              >
+                  <Share2 size={18} className="text-[#3b82f6]" />
+                  <span className="text-sm font-medium whitespace-nowrap text-white/90">Share Tree</span>
+            </button>
+
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
 
               {/* Download Button */}
               <button 
