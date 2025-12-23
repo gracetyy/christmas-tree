@@ -14,6 +14,8 @@ const App: React.FC = () => {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(ZoomLevel.FULL_TREE);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
   const [focusedPhoto, setFocusedPhoto] = useState<PhotoData | null>(null);
+  const [userName, setUserName] = useState('');
+  const [isNameSet, setIsNameSet] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -28,8 +30,16 @@ const App: React.FC = () => {
   const [instaLoading, setInstaLoading] = useState(false);
   const [instaStatus, setInstaStatus] = useState('');
 
-  // Initialize Photos
+  // Initialize Photos and URL Params
   useEffect(() => {
+    // Check for URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get('name');
+    if (nameParam) {
+        setUserName(decodeURIComponent(nameParam));
+        setIsNameSet(true);
+    }
+
     const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
     const initialPhotos: PhotoData[] = positions.map((pos, index) => {
       // Rotate through placeholder types
@@ -51,11 +61,14 @@ const App: React.FC = () => {
   useEffect(() => {
     // Attempt auto-play
     if (audioRef.current) {
-        audioRef.current.volume = 0.4;
+        audioRef.current.volume = 0.8; // Increased volume
         audioRef.current.play()
-            .then(() => setIsMusicPlaying(true))
+            .then(() => {
+                console.log("Autoplay successful");
+                setIsMusicPlaying(true);
+            })
             .catch((e) => {
-                console.log("Autoplay blocked, user interaction required", e);
+                console.log("Autoplay blocked, waiting for user interaction", e);
                 setIsMusicPlaying(false);
             });
     }
@@ -67,26 +80,42 @@ const App: React.FC = () => {
 
   }, []);
 
-  // Retry autoplay on first user interaction if blocked
+  // More aggressive retry for autoplay on any interaction
   useEffect(() => {
-    const startAudio = () => {
-      if (audioRef.current && audioRef.current.paused) {
+    let hasInteracted = false;
+
+    const startAudio = (e: Event) => {
+      // If clicking the music toggle button, let toggleMusic handle it
+      const target = e.target as HTMLElement;
+      if (target.closest('button[title*="Music"]')) return;
+
+      if (!hasInteracted && audioRef.current && audioRef.current.paused) {
+         hasInteracted = true;
+         audioRef.current.muted = false;
          audioRef.current.play()
-           .then(() => setIsMusicPlaying(true))
-           .catch(() => {});
+           .then(() => {
+             setIsMusicPlaying(true);
+             cleanup();
+           })
+           .catch((err) => console.error("Playback failed even after interaction:", err));
       }
     };
 
-    if (!isMusicPlaying) {
-        window.addEventListener('click', startAudio, { once: true });
-        window.addEventListener('touchstart', startAudio, { once: true });
-    }
-
-    return () => {
-        window.removeEventListener('click', startAudio);
+    const cleanup = () => {
+        window.removeEventListener('mousedown', startAudio);
+        window.removeEventListener('keydown', startAudio);
         window.removeEventListener('touchstart', startAudio);
+        window.removeEventListener('click', startAudio);
     };
-  }, [isMusicPlaying]);
+
+    // Add multiple listeners to ensure capture of first interaction
+    window.addEventListener('mousedown', startAudio);
+    window.addEventListener('keydown', startAudio);
+    window.addEventListener('touchstart', startAudio);
+    window.addEventListener('click', startAudio);
+
+    return cleanup;
+  }, []); // Only run once on mount
 
   // Clear focused photo when zooming out
   useEffect(() => {
@@ -97,12 +126,14 @@ const App: React.FC = () => {
 
   const toggleMusic = () => {
     if (!audioRef.current) return;
-    if (isMusicPlaying) {
+    
+    if (!audioRef.current.paused) {
         audioRef.current.pause();
         setIsMusicPlaying(false);
     } else {
-        audioRef.current.play();
-        setIsMusicPlaying(true);
+        audioRef.current.play()
+            .then(() => setIsMusicPlaying(true))
+            .catch(err => console.error("Toggle play failed:", err));
     }
   };
 
@@ -298,6 +329,9 @@ const App: React.FC = () => {
         ref={audioRef} 
         src="/assets/music/christmas-song.mp3" 
         loop 
+        autoPlay
+        muted={false}
+        preload="auto"
       />
       
       <Scene 
@@ -326,6 +360,10 @@ const App: React.FC = () => {
         isHandReady={isHandReady}
         isMusicPlaying={isMusicPlaying}
         toggleMusic={toggleMusic}
+        userName={userName}
+        setUserName={setUserName}
+        isNameSet={isNameSet}
+        setIsNameSet={setIsNameSet}
       />
 
       <InstagramModal 
