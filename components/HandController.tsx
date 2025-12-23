@@ -78,36 +78,52 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
   };
 
   const processLandmarks = (landmarks: any[]) => {
-    // 4 is Thumb Tip, 8 is Index Finger Tip
+    // Landmarks: 4 (Thumb Tip), 8 (Index Tip), 12 (Middle Tip), 16 (Ring Tip), 20 (Pinky Tip)
     const thumbTip = landmarks[4];
     const indexTip = landmarks[8];
+    const middleTip = landmarks[12];
+    const ringTip = landmarks[16];
+    const pinkyTip = landmarks[20];
+    
+    const indexBase = landmarks[5];
+    const middleBase = landmarks[9];
+    const ringBase = landmarks[13];
+    const pinkyBase = landmarks[17];
     const wrist = landmarks[0];
 
-    // Calculate distance for pinch/spread
+    // 1. Calculate Pinch/Spread distance (Thumb to Index)
     const dx = thumbTip.x - indexTip.x;
     const dy = thumbTip.y - indexTip.y;
     const dz = thumbTip.z - indexTip.z;
     const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-    if (distance < GESTURE_THRESHOLDS.PINCH_DISTANCE) {
+    // 2. Check for "Open Palm" (all fingers extended)
+    // In normalized coords, smaller y means higher up
+    const isIndexExtended = indexTip.y < indexBase.y;
+    const isMiddleExtended = middleTip.y < middleBase.y;
+    const isRingExtended = ringTip.y < ringBase.y;
+    const isPinkyExtended = pinkyTip.y < pinkyBase.y;
+    
+    // If at least 3 fingers are curled and thumb is close to them, consider it a closed palm (fist)
+    const curledCount = [isIndexExtended, isMiddleExtended, isRingExtended, isPinkyExtended].filter(x => !x).length;
+    const isClosedPalm = curledCount >= 3 && distance < GESTURE_THRESHOLDS.SPREAD_DISTANCE;
+
+    if (isClosedPalm) {
+        // Closed Palm (Fist) triggers Zoom Out / Reset
         onGesture('ZOOM_OUT');
-        lastHandPos.current = null; // Stop panning while gesturing size
+        lastHandPos.current = null; 
     } else if (distance > GESTURE_THRESHOLDS.SPREAD_DISTANCE) {
+        // Spread Fingers (Open Palm) triggers Zoom In
         onGesture('ZOOM_IN');
         
         // Handle Panning when hand is open/spread
-        // We use wrist position or center palm for panning movement
         const currentX = wrist.x;
         const currentY = wrist.y;
 
         if (lastHandPos.current) {
-            // Calculate delta
-            // Multiply by sensitivity constant to increase magnitude
             const panX = (currentX - lastHandPos.current.x) * -1 * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
             const panY = (currentY - lastHandPos.current.y) * GESTURE_THRESHOLDS.PAN_SENSITIVITY; 
             
-            // Only pan if movement is significant (threshold check on raw movement before amplification)
-            // We check raw diff to avoid jitter, but send amplified diff
             const rawDiffX = Math.abs(currentX - lastHandPos.current.x);
             const rawDiffY = Math.abs(currentY - lastHandPos.current.y);
 
@@ -116,7 +132,6 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
             }
         }
         lastHandPos.current = { x: currentX, y: currentY };
-
     } else {
         lastHandPos.current = null;
     }

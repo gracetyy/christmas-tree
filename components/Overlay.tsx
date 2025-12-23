@@ -109,7 +109,7 @@ const Overlay: React.FC<OverlayProps> = ({
   if (isRecording) return null;
 
   return (
-    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6 overflow-hidden">
+    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-6">
       
       {/* Top Header - Just the Title */}
       <div className="flex flex-col justify-center items-center w-full relative pt-4 md:pt-8 px-4">
@@ -160,20 +160,20 @@ const Overlay: React.FC<OverlayProps> = ({
                   <ul className="space-y-4">
                       <li className="flex items-center gap-4 group">
                         <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                          <ZoomIn size={18} className="text-white/70" />
+                          <Hand size={18} className="text-white/70" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Spread</span>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
                           <span className="text-sm font-medium">Zoom In</span>
                         </div>
                       </li>
                       
                       <li className="flex items-center gap-4 group">
                         <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                          <ZoomOut size={18} className="text-white/70" />
+                          <div className="w-4 h-4 rounded-md border-2 border-white/70" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Pinch</span>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
                           <span className="text-sm font-medium">Zoom Out</span>
                         </div>
                       </li>
@@ -211,7 +211,7 @@ const Overlay: React.FC<OverlayProps> = ({
           </button>
         ) : (
           /* Main Control Panel */
-          <div className="flex flex-col items-center gap-3 w-full max-w-full overflow-x-hidden">
+          <div className="flex flex-col items-center gap-3 w-full max-w-full">
             
             {/* Top Row: System & View Settings - Flexible layout */}
             <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-1 md:gap-2">
@@ -340,7 +340,7 @@ const Overlay: React.FC<OverlayProps> = ({
                   className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
               >
                   <Instagram size={16} className="text-[#fd1d1d]" />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Instagram</span>
+                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Import from Instagram</span>
               </button>
 
               <div className="w-px h-6 bg-white/10 mx-0.5"></div>
@@ -359,17 +359,19 @@ const Overlay: React.FC<OverlayProps> = ({
                 
                 {/* Dropdown Menu */}
                 {!isRecording && (
-                  <div className="absolute bottom-full left-0 mb-2 w-40 md:w-48 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-30">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-44 md:w-56 bg-black/95 backdrop-blur-2xl border border-white/20 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
                     <button 
                       onClick={() => onRecordVideo('FULL')}
-                      className="w-full text-left px-4 py-3 text-[10px] md:text-xs font-medium text-white hover:bg-white/10 transition-colors border-b border-white/5"
+                      className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors border-b border-white/10 flex items-center gap-3"
                     >
+                      <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                       360° Rotation
                     </button>
                     <button 
                       onClick={() => onRecordVideo('ALBUM')}
-                      className="w-full text-left px-4 py-3 text-[10px] md:text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                      className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors flex items-center gap-3"
                     >
+                      <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
                       Cinematic Tour
                     </button>
                   </div>
@@ -397,7 +399,7 @@ const Overlay: React.FC<OverlayProps> = ({
               title="Star our repo!"
             >
                 <Github size={16} />
-                <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Star Repo</span>
+                <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Please star our repo! &lt;3</span>
             </button>
 
             <input 
