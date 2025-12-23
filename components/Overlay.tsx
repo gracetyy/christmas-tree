@@ -173,7 +173,7 @@ const Overlay: React.FC<OverlayProps> = ({
                           <ZoomOut size={18} className="text-white/70" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Pinch</span>
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Pinch / Palm</span>
                           <span className="text-sm font-medium">Zoom Out</span>
                         </div>
                       </li>

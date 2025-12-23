@@ -78,18 +78,20 @@ const CameraController: React.FC<{
         const photo = photos[index];
         
         const orbitControls = controls as any;
-        const photoPos = new THREE.Vector3(...photo.position);
-        orbitControls.target.lerp(photoPos, 6 * delta);
-        
-        const dist = 6;
-        const angle = photo.rotation[1];
-        const camX = photoPos.x + Math.sin(angle) * dist;
-        const camZ = photoPos.z + Math.cos(angle) * dist;
-        const camY = photoPos.y; 
+        if (orbitControls) {
+          const photoPos = new THREE.Vector3(...photo.position);
+          orbitControls.target.lerp(photoPos, 8 * delta);
+          
+          const dist = 6;
+          const angle = photo.rotation[1];
+          const camX = photoPos.x + Math.sin(angle) * dist;
+          const camZ = photoPos.z + Math.cos(angle) * dist;
+          const camY = photoPos.y; 
 
-        const idealPos = new THREE.Vector3(camX, camY, camZ);
-        camera.position.lerp(idealPos, 6 * delta);
-        orbitControls.update();
+          const idealPos = new THREE.Vector3(camX, camY, camZ);
+          camera.position.lerp(idealPos, 8 * delta);
+          orbitControls.update();
+        }
         return;
       }
     }
@@ -131,7 +133,7 @@ const CameraController: React.FC<{
     else if (controlMode === ControlMode.MOUSE && isAnimating.current) {
         if (controls) {
             const orbitControls = controls as any;
-            const lerpSpeed = 6 * delta; // Increased speed for snappier album view
+            const lerpSpeed = 8 * delta; // Slightly faster for smoother feel
 
             if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
                 // ZOOM IN TO PHOTO
@@ -152,7 +154,8 @@ const CameraController: React.FC<{
                 
                 orbitControls.update();
 
-                if (camera.position.distanceTo(idealPos) < 0.1 && orbitControls.target.distanceTo(photoPos) < 0.1) {
+                // Check if we have arrived
+                if (camera.position.distanceTo(idealPos) < 0.05 && orbitControls.target.distanceTo(photoPos) < 0.05) {
                     isAnimating.current = false;
                 }
             } else if (zoomLevel === ZoomLevel.FULL_TREE) {
@@ -161,7 +164,7 @@ const CameraController: React.FC<{
                 camera.position.lerp(CAMERA_CONFIG.DEFAULT_POS, lerpSpeed);
                 orbitControls.update();
 
-                if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.5) {
+                if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.1) {
                     isAnimating.current = false;
                 }
             }
@@ -176,7 +179,6 @@ const CameraController: React.FC<{
         enablePan={controlMode === ControlMode.MOUSE}
         minDistance={2}
         maxDistance={100}
-        target={CAMERA_CONFIG.LOOK_AT_OFFSET}
         makeDefault
     />
   );
