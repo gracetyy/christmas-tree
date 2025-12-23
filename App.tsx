@@ -85,9 +85,9 @@ const App: React.FC = () => {
     let hasInteracted = false;
 
     const startAudio = (e: Event) => {
-      // If clicking a button, let the button's own handler deal with it
+      // If clicking the music toggle button, let toggleMusic handle it
       const target = e.target as HTMLElement;
-      if (target.closest('button')) return;
+      if (target.closest('button[title*="Music"]')) return;
 
       if (!hasInteracted && audioRef.current && audioRef.current.paused) {
          hasInteracted = true;
@@ -126,12 +126,14 @@ const App: React.FC = () => {
 
   const toggleMusic = () => {
     if (!audioRef.current) return;
-    if (isMusicPlaying) {
+    
+    if (!audioRef.current.paused) {
         audioRef.current.pause();
         setIsMusicPlaying(false);
     } else {
-        audioRef.current.play();
-        setIsMusicPlaying(true);
+        audioRef.current.play()
+            .then(() => setIsMusicPlaying(true))
+            .catch(err => console.error("Toggle play failed:", err));
     }
   };
 
