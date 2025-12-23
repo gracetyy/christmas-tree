@@ -67,6 +67,27 @@ const App: React.FC = () => {
 
   }, []);
 
+  // Retry autoplay on first user interaction if blocked
+  useEffect(() => {
+    const startAudio = () => {
+      if (audioRef.current && audioRef.current.paused) {
+         audioRef.current.play()
+           .then(() => setIsMusicPlaying(true))
+           .catch(() => {});
+      }
+    };
+
+    if (!isMusicPlaying) {
+        window.addEventListener('click', startAudio, { once: true });
+        window.addEventListener('touchstart', startAudio, { once: true });
+    }
+
+    return () => {
+        window.removeEventListener('click', startAudio);
+        window.removeEventListener('touchstart', startAudio);
+    };
+  }, [isMusicPlaying]);
+
   // Clear focused photo when zooming out
   useEffect(() => {
     if (zoomLevel === ZoomLevel.FULL_TREE) {
@@ -176,6 +197,14 @@ const App: React.FC = () => {
     };
   };
 
+  const handleDeletePhoto = (id: string) => {
+    setPhotos(prev => prev.filter(p => p.id !== id));
+    if (focusedPhoto?.id === id) {
+        setFocusedPhoto(null);
+        setZoomLevel(ZoomLevel.FULL_TREE);
+    }
+  };
+
   const handleInstagramSubmit = async (username: string) => {
       setInstaLoading(true);
       setInstaStatus('Scraping Instagram Profile...');
@@ -262,7 +291,8 @@ const App: React.FC = () => {
         photos={photos} 
         onUpload={handleSingleUpload} 
         onPhotoClick={handlePhotoClick}
-        controlMode={controlMode} 
+        onDelete={handleDeletePhoto}
+        controlMode={controlMode}  
         interactionMode={interactionMode}
         zoomLevel={zoomLevel}
         panOffset={panOffset}

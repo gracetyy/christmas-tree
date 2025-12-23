@@ -15,6 +15,7 @@ interface SceneProps {
   photos: PhotoData[];
   onUpload: (id: string, file: File) => void;
   onPhotoClick: (data: PhotoData) => void;
+  onDelete: (id: string) => void;
   controlMode: ControlMode;
   interactionMode: InteractionMode;
   zoomLevel: ZoomLevel;
@@ -139,7 +140,8 @@ const Scene: React.FC<SceneProps> = ({
     photos, 
     onUpload, 
     onPhotoClick, 
-    controlMode, 
+    onDelete,
+    controlMode,  
     interactionMode, 
     zoomLevel, 
     panOffset, 
@@ -199,6 +201,7 @@ const Scene: React.FC<SceneProps> = ({
             data={photo} 
             onUpload={onUpload} 
             onPhotoClick={onPhotoClick}
+            onDelete={onDelete}
             isZoomedIn={zoomLevel === ZoomLevel.ZOOMED_IN}
             controlMode={controlMode}
             interactionMode={interactionMode}
