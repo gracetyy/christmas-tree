@@ -21,7 +21,7 @@ export const COLORS = {
 export const TREE_CONFIG = {
   HEIGHT: 14, // Slightly taller for elegance
   RADIUS_BOTTOM: 6,
-  PARTICLE_COUNT: 12000, // Higher density for lush look
+  PARTICLE_COUNT: 10000, // Slightly reduced for performance while keeping density
   PARTICLE_SIZE: 0.25, 
 };
 

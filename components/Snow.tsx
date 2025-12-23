@@ -17,7 +17,7 @@ const getSnowTexture = () => {
 }
 
 const Snow: React.FC = () => {
-  const count = 3000;
+  const count = 2000;
   const mesh = useRef<THREE.Points>(null);
   
   const texture = useMemo(() => getSnowTexture(), []);
