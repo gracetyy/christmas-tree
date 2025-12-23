@@ -150,8 +150,15 @@ const Scene: React.FC<SceneProps> = ({
   return (
     <Canvas
       shadows
+      dpr={[1, 1.5]} // clamp device pixel ratio to reduce GPU load on hi-DPI screens
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
-      gl={{ antialias: true, toneMapping: THREE.ReinhardToneMapping, toneMappingExposure: 1.2, preserveDrawingBuffer: true }}
+      gl={{ 
+        antialias: true, 
+        toneMapping: THREE.ReinhardToneMapping, 
+        toneMappingExposure: 1.2, 
+        preserveDrawingBuffer: true,
+        powerPreference: 'high-performance',
+      }}
       style={{ background: COLORS.BACKGROUND }}
     >
       <CameraController 
@@ -173,7 +180,7 @@ const Scene: React.FC<SceneProps> = ({
       {/* Rim Light for shape definition */}
       <spotLight position={[0, 30, 0]} intensity={1} angle={0.5} penumbra={1} color="#ffffff" />
       
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
       
       {/* Global Snow Effect */}
       <Snow />
@@ -187,7 +194,7 @@ const Scene: React.FC<SceneProps> = ({
         {/* Magic Flies / Sparkles around the tree */}
         <Sparkles 
             position={[0, -3, 0]}
-            count={150}
+            count={120}
             scale={[12, 10, 12]}
             size={15}
             speed={0.2}
