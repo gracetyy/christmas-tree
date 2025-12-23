@@ -94,7 +94,20 @@ const Star: React.FC = () => {
       </Billboard>
 
       {/* The 3D Star Mesh */}
-      <mesh geometry={starGeometry}>
+      <mesh 
+        geometry={starGeometry}
+        onClick={(e) => {
+          e.stopPropagation();
+          window.open('https://github.com/gracetyy/christmas-tree', '_blank');
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = 'auto';
+        }}
+      >
          <meshStandardMaterial 
              color={COLORS.STAR} 
              emissive={COLORS.STAR_GLOW} 
