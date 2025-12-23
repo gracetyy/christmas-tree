@@ -59,48 +59,28 @@ const App: React.FC = () => {
 
     audio.volume = 0.8;
     
-    // Explicitly set source and load
-    audio.src = "/assets/music/christmas-song.mp3";
-    audio.load();
-
-    const attemptPlay = (e?: Event) => {
-      // If clicking the music toggle button, let toggleMusic handle it
-      if (e) {
-        const target = e.target as HTMLElement;
-        if (target.closest('button[title*="Music"]')) return;
-      }
-
-      // Try to play
-      const playPromise = audio.play();
-      
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            console.log("Audio started successfully");
-            setIsMusicPlaying(true);
-            removeListeners();
-          })
-          .catch(err => {
-            console.log("Playback failed, still waiting for user interaction", err);
-          });
+    const attemptPlay = async () => {
+      try {
+        await audio.play();
+        console.log("Audio started successfully");
+        setIsMusicPlaying(true);
+        removeListeners();
+      } catch (err) {
+        console.log("Playback blocked, waiting for interaction");
       }
     };
 
     const removeListeners = () => {
-      window.removeEventListener('click', attemptPlay, true);
-      window.removeEventListener('touchstart', attemptPlay, true);
-      window.removeEventListener('mousedown', attemptPlay, true);
-      window.removeEventListener('keydown', attemptPlay, true);
+      window.removeEventListener('pointerdown', attemptPlay);
+      window.removeEventListener('keydown', attemptPlay);
     };
 
-    // 1. Immediate attempt
-    attemptPlay();
+    // Listen for any interaction on the window
+    window.addEventListener('pointerdown', attemptPlay);
+    window.addEventListener('keydown', attemptPlay);
 
-    // 2. Interaction listeners (using capture phase to be sure)
-    window.addEventListener('click', attemptPlay, true);
-    window.addEventListener('touchstart', attemptPlay, true);
-    window.addEventListener('mousedown', attemptPlay, true);
-    window.addEventListener('keydown', attemptPlay, true);
+    // Also try immediately (might work if already interacted)
+    attemptPlay();
 
     return removeListeners;
   }, []);
