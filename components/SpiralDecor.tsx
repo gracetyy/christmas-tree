@@ -93,7 +93,7 @@ const SpiralDecor: React.FC = () => {
   // Generate decorative balls
   const baubles = useMemo(() => {
     const items = [];
-    const count = 120; 
+    const count = 80; // Reduced count to avoid overlaps
     
     for (let i = 0; i < count; i++) {
       const rawRandom = Math.random();
@@ -102,8 +102,9 @@ const SpiralDecor: React.FC = () => {
       const y = (h * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
       const maxRadius = TREE_CONFIG.RADIUS_BOTTOM * (1 - h);
       
-      // Place partially embedded or just on surface
-      const r = maxRadius * (0.95 + Math.random() * 0.25); 
+      // Place slightly deeper inside the tree volume to avoid overlapping with Polaroids
+      // Polaroids are floating outside. By keeping these at 80-95% radius, they stay "in" the branches.
+      const r = maxRadius * (0.8 + Math.random() * 0.15); 
       
       const theta = Math.random() * Math.PI * 2;
       const x = r * Math.cos(theta);

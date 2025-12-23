@@ -2,6 +2,7 @@ import React, { useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html, useTexture } from '@react-three/drei';
+import { Trash2 } from 'lucide-react';
 import { COLORS, PLACEHOLDER_TYPES } from '../constants';
 import { PhotoData, ControlMode, InteractionMode } from '../types';
 import { generatePlaceholderTexture } from '../utils/math';
@@ -10,6 +11,7 @@ interface PolaroidProps {
   data: PhotoData;
   onUpload: (id: string, file: File) => void;
   onPhotoClick: (data: PhotoData) => void;
+  onDelete: (id: string) => void;
   isZoomedIn: boolean;
   controlMode: ControlMode;
   interactionMode: InteractionMode;
@@ -19,6 +21,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
   data, 
   onUpload, 
   onPhotoClick,
+  onDelete,
   isZoomedIn, 
   controlMode, 
   interactionMode 
@@ -135,14 +138,33 @@ const Polaroid: React.FC<PolaroidProps> = ({
         </mesh>
       </group>
       
-      <Html>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          style={{ display: 'none' }} 
-          accept="image/*" 
-          onChange={handleFileChange}
-        />
+      {/* Interaction UI (Hidden Input & Delete Button) */}
+      <Html position={[0.5, -1.4, 0.1]} transform occlude style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>
+        <div className="flex gap-2" onPointerDown={(e) => e.stopPropagation()}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              accept="image/*" 
+              onChange={handleFileChange}
+            />
+            
+            {interactionMode === InteractionMode.EDIT && (
+                 <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Prevent click from propagating to group
+                        e.preventDefault();
+                        onDelete(data.id);
+                    }}
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-colors"
+                    title="Delete Photo"
+                    style={{ pointerEvents: 'auto' }}
+                 >
+                    <Trash2 size={14} />
+                 </button>
+            )}
+        </div>
       </Html>
     </group>
   );

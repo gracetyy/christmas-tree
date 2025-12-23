@@ -67,6 +67,27 @@ const App: React.FC = () => {
 
   }, []);
 
+  // Retry autoplay on first user interaction if blocked
+  useEffect(() => {
+    const startAudio = () => {
+      if (audioRef.current && audioRef.current.paused) {
+         audioRef.current.play()
+           .then(() => setIsMusicPlaying(true))
+           .catch(() => {});
+      }
+    };
+
+    if (!isMusicPlaying) {
+        window.addEventListener('click', startAudio, { once: true });
+        window.addEventListener('touchstart', startAudio, { once: true });
+    }
+
+    return () => {
+        window.removeEventListener('click', startAudio);
+        window.removeEventListener('touchstart', startAudio);
+    };
+  }, [isMusicPlaying]);
+
   // Clear focused photo when zooming out
   useEffect(() => {
     if (zoomLevel === ZoomLevel.FULL_TREE) {
@@ -176,6 +197,14 @@ const App: React.FC = () => {
     };
   };
 
+  const handleDeletePhoto = (id: string) => {
+    setPhotos(prev => prev.filter(p => p.id !== id));
+    if (focusedPhoto?.id === id) {
+        setFocusedPhoto(null);
+        setZoomLevel(ZoomLevel.FULL_TREE);
+    }
+  };
+
   const handleInstagramSubmit = async (username: string) => {
       setInstaLoading(true);
       setInstaStatus('Scraping Instagram Profile...');
@@ -187,7 +216,7 @@ const App: React.FC = () => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ 
                   instagramUsername: username,
-                  topXCount: DEFAULT_PHOTOS_COUNT 
+                  topXCount: photos.length 
               })
           });
 
@@ -228,12 +257,11 @@ const App: React.FC = () => {
              throw new Error("Failed to construct valid image data from response.");
           }
 
-          // 2. Update Photos
+          // 2. Update Photos - Fill all available slots by looping through received images
           const newPhotos = [...photos];
-          let urlIndex = 0;
-          for (let i = 0; i < newPhotos.length && urlIndex < newImageUrls.length; i++) {
-              newPhotos[i].url = newImageUrls[urlIndex];
-              urlIndex++;
+          for (let i = 0; i < newPhotos.length; i++) {
+              // Loop through the received images to fill all slots
+              newPhotos[i].url = newImageUrls[i % newImageUrls.length];
           }
           setPhotos(newPhotos);
           setIsInstaModalOpen(false);
@@ -262,7 +290,8 @@ const App: React.FC = () => {
         photos={photos} 
         onUpload={handleSingleUpload} 
         onPhotoClick={handlePhotoClick}
-        controlMode={controlMode} 
+        onDelete={handleDeletePhoto}
+        controlMode={controlMode}  
         interactionMode={interactionMode}
         zoomLevel={zoomLevel}
         panOffset={panOffset}

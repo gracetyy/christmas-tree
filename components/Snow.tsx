@@ -2,9 +2,25 @@ import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+const getSnowTexture = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; 
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+    }
+    return new THREE.CanvasTexture(canvas);
+}
+
 const Snow: React.FC = () => {
   const count = 3000;
   const mesh = useRef<THREE.Points>(null);
+  
+  const texture = useMemo(() => getSnowTexture(), []);
   
   const particles = useMemo(() => {
     const positions = new Float32Array(count * 3);
@@ -55,13 +71,15 @@ const Snow: React.FC = () => {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.15}
+        size={0.25}
         color="#ffffff"
+        map={texture}
         transparent
         opacity={0.8}
         sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
+        alphaTest={0.5}
       />
     </points>
   );
