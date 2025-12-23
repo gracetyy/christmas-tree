@@ -41,6 +41,17 @@ const CameraController: React.FC<{
   const isAnimating = useRef(false);
   const recordingStartTime = useRef(0);
 
+  // Ensure camera starts centered on the tree
+  useEffect(() => {
+    camera.position.copy(CAMERA_CONFIG.DEFAULT_POS);
+    camera.lookAt(CAMERA_CONFIG.LOOK_AT_OFFSET);
+    if (controls) {
+      const orbitControls = controls as any;
+      orbitControls.target.copy(CAMERA_CONFIG.LOOK_AT_OFFSET);
+      orbitControls.update();
+    }
+  }, [camera, controls]);
+
   useEffect(() => {
     // Reset panning when switching modes or zoom levels
     if (controlMode === ControlMode.HAND && zoomLevel === ZoomLevel.FULL_TREE) {
