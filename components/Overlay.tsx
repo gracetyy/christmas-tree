@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -103,25 +103,53 @@ const Overlay: React.FC<OverlayProps> = ({
       </div>
 
       {/* Instructions Pane - Stays on the right side */}
-      <div className="absolute top-1/2 right-6 transform -translate-y-1/2 pointer-events-none">
+      <div className="absolute top-1/2 right-8 transform -translate-y-1/2 pointer-events-none transition-all duration-500">
           {showUI && controlMode === ControlMode.HAND && (
-              <div className="bg-black/60 backdrop-blur-md p-4 rounded-xl border-l-2 border-[#1cbd62] text-white/90 max-w-xs transition-opacity duration-500">
-                  <h3 className="font-bold mb-2 text-[#1cbd62]">Gestures</h3>
-                  <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        <span>Spread fingers: Zoom In</span>
+              <div className="bg-white/5 backdrop-blur-3xl p-6 rounded-[2.5rem] border border-white/10 text-white/90 w-64 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col gap-4 animate-in fade-in slide-in-from-right-4 duration-700">
+                  <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+                      <div className="p-2 bg-[#1cbd62]/20 rounded-full">
+                        <Hand size={20} className="text-[#1cbd62]" />
+                      </div>
+                      <h3 className="font-semibold tracking-wide uppercase text-xs">Hand Controls</h3>
+                  </div>
+                  
+                  <ul className="space-y-4">
+                      <li className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <ZoomIn size={18} className="text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Spread</span>
+                          <span className="text-sm font-medium">Zoom In</span>
+                        </div>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        <span>Pinch fingers: Zoom Out</span>
+                      
+                      <li className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <ZoomOut size={18} className="text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Pinch</span>
+                          <span className="text-sm font-medium">Zoom Out</span>
+                        </div>
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-white"></span>
-                        <span>Move open hand: Pan view</span>
+                      
+                      <li className="flex items-center gap-4 group">
+                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <Move size={18} className="text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Move</span>
+                          <span className="text-sm font-medium">Pan View</span>
+                        </div>
                       </li>
                   </ul>
-                  {!isHandReady && <div className="mt-3 text-xs text-yellow-300 animate-pulse">Waiting for camera...</div>}
+
+                  {!isHandReady && (
+                    <div className="mt-2 py-2 px-4 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 text-[9px] text-center font-bold animate-pulse uppercase tracking-widest">
+                      Waiting for camera...
+                    </div>
+                  )}
               </div>
           )}
       </div>
