@@ -10,6 +10,7 @@ import { useAudio } from './hooks/useAudio';
 import { useRecording } from './hooks/useRecording';
 import { useInstagram } from './hooks/useInstagram';
 import { useTreeInteraction } from './hooks/useTreeInteraction';
+import { processImageWithPadding } from './utils/image';
 
 const App: React.FC = () => {
   const [controlMode, setControlMode] = useState<ControlMode>(ControlMode.MOUSE);
@@ -115,8 +116,15 @@ const App: React.FC = () => {
     scrollToTop();
   };
 
-  const handleSingleUpload = (id: string, file: File) => {
-    const url = URL.createObjectURL(file);
+  const handleSingleUpload = async (id: string, file: File) => {
+    const rawUrl = URL.createObjectURL(file);
+    const url = await processImageWithPadding(rawUrl);
+    
+    // Revoke the raw object URL if we created a new data URL
+    if (url !== rawUrl) {
+      URL.revokeObjectURL(rawUrl);
+    }
+    
     const photoToUpdate = photos.find(p => p.id === id);
     if (photoToUpdate) {
       const updatedPhoto = { ...photoToUpdate, url };
@@ -128,7 +136,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleBulkUpload = (files: FileList) => {
+  const handleBulkUpload = async (files: FileList) => {
     const newFiles = Array.from(files);
 
     // Distribute uploaded files into existing slots
@@ -146,7 +154,14 @@ const App: React.FC = () => {
     for (const index of sortedIndices) {
       if (fileIndex >= newFiles.length) break;
       
-      const url = URL.createObjectURL(newFiles[fileIndex]);
+      const rawUrl = URL.createObjectURL(newFiles[fileIndex]);
+      const url = await processImageWithPadding(rawUrl);
+      
+      // Revoke the raw object URL if we created a new data URL
+      if (url !== rawUrl) {
+        URL.revokeObjectURL(rawUrl);
+      }
+      
       newPhotos[index] = { ...newPhotos[index], url };
       
       lastAddedPhoto = newPhotos[index];

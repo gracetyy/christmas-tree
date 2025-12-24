@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PhotoData } from '../types';
 import { INSTAGRAM_WEBHOOK_URL } from '../constants';
+import { processImageWithPadding } from '../utils/image';
 
 interface UseInstagramProps {
     photos: PhotoData[];
@@ -53,13 +54,18 @@ export const useInstagram = ({ photos, setPhotos, onComplete }: UseInstagramProp
 
             setInstaStatus(`Hanging ${receivedPhotos.length} photos on the tree...`);
 
-            // Convert to Data URIs
-            const newImageUrls = receivedPhotos.map((p: any) => {
-                if (p.base64Data && p.mimeType) {
-                    return `data:${p.mimeType};base64,${p.base64Data}`;
-                }
-                return null;
-            }).filter((u: string | null): u is string => !!u);
+            // Convert to Data URIs and add padding if necessary
+            const processedUrls = await Promise.all(
+                receivedPhotos.map(async (p: any) => {
+                    if (p.base64Data && p.mimeType) {
+                        const dataUrl = `data:${p.mimeType};base64,${p.base64Data}`;
+                        return await processImageWithPadding(dataUrl);
+                    }
+                    return null;
+                })
+            );
+
+            const newImageUrls = processedUrls.filter((u: string | null): u is string => !!u);
 
             if (newImageUrls.length === 0) {
                 throw new Error("Failed to construct valid image data from response.");

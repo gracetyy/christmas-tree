@@ -140,7 +140,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
           <boxGeometry args={[1.2, 1.5, 0.04]} />
           <meshStandardMaterial 
             color={COLORS.POLAROID_FRAME} 
-            roughness={0.8}
+            roughness={0.7}
             metalness={0.1}
           />
         </mesh>
@@ -148,7 +148,12 @@ const Polaroid: React.FC<PolaroidProps> = ({
         {/* The Photo Area */}
         <mesh position={[0, -0.65, 0.025]}>
           <planeGeometry args={[1.0, 1.0]} />
-          <meshBasicMaterial map={texture} />
+          <meshStandardMaterial 
+            map={texture} 
+            color={COLORS.POLAROID_FRAME}
+            roughness={0.7}
+            metalness={0.1}
+          />
         </mesh>
 
         {/* Backing */}

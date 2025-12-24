@@ -34,6 +34,10 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
   const pointsRef = useRef<THREE.Points>(null);
   const explodeProgress = useRef(0);
   
+  const uniforms = useRef({
+    uTime: { value: 0 },
+  }).current;
+
   const fluffTexture = useMemo(() => getFluffTexture(), []);
 
   // Calculate points for the tube geometry
@@ -54,6 +58,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
     
     const positions = new Float32Array(totalParticles * 3);
     const colors = new Float32Array(totalParticles * 3);
+    const progress = new Float32Array(totalParticles);
     
     const baseColor = new THREE.Color(COLORS.SPIRAL_LIGHT);
     const glowColor = new THREE.Color('#ffffff'); 
@@ -61,6 +66,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
     let idx = 0;
     for (let i = 0; i < curvePoints.length; i++) {
       const pt = curvePoints[i];
+      const p = i / (curvePoints.length - 1);
       
       for (let j = 0; j < particlesPerPoint; j++) {
         // Random offset for volume
@@ -87,6 +93,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         colors[idx * 3 + 1] = c.g * brightness;
         colors[idx * 3 + 2] = c.b * brightness;
 
+        progress[idx] = p;
         idx++;
       }
     }
@@ -94,6 +101,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3)); // Use a copy for the attribute
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
     
     return { tinselGeo: geo, initialTinselPositions: positions };
   }, [curve]);
@@ -173,6 +181,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
+    uniforms.uTime.value = time;
     const targetProgress = isExploded ? 1 : 0;
     const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
     explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
@@ -221,6 +230,29 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
           toneMapped={false}
           roughness={0.1}
           metalness={0.8}
+          onBeforeCompile={(shader) => {
+            shader.uniforms.uTime = uniforms.uTime;
+            shader.vertexShader = shader.vertexShader.replace(
+              '#include <uv_pars_vertex>',
+              '#define USE_UV\n#include <uv_pars_vertex>'
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+              '#include <uv_pars_fragment>',
+              '#define USE_UV\n#include <uv_pars_fragment>'
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+              '#include <common>',
+              '#include <common>\nuniform float uTime;'
+            );
+            shader.fragmentShader = shader.fragmentShader.replace(
+              '#include <emissivemap_fragment>',
+              `
+              #include <emissivemap_fragment>
+              float chase = sin(vUv.x * 20.0 - uTime * 4.0) * 0.5 + 0.5;
+              totalEmissiveRadiance *= (0.2 + 0.8 * chase);
+              `
+            );
+          }}
         />
       </mesh>
 
@@ -234,6 +266,29 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
                 opacity={0.1}
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}
+                onBeforeCompile={(shader) => {
+                  shader.uniforms.uTime = uniforms.uTime;
+                  shader.vertexShader = shader.vertexShader.replace(
+                    '#include <uv_pars_vertex>',
+                    '#define USE_UV\n#include <uv_pars_vertex>'
+                  );
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <uv_pars_fragment>',
+                    '#define USE_UV\n#include <uv_pars_fragment>'
+                  );
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <common>',
+                    '#include <common>\nuniform float uTime;'
+                  );
+                  shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <color_fragment>',
+                    `
+                    #include <color_fragment>
+                    float chase = sin(vUv.x * 20.0 - uTime * 4.0) * 0.5 + 0.5;
+                    diffuseColor.a *= (0.1 + 0.9 * chase);
+                    `
+                  );
+                }}
             />
         </mesh>
       )}
@@ -251,6 +306,37 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             alphaTest={0.01}
+            onBeforeCompile={(shader) => {
+              shader.uniforms.uTime = uniforms.uTime;
+              shader.vertexShader = shader.vertexShader.replace(
+                '#include <common>',
+                `#include <common>
+                attribute float progress;
+                varying float vProgress;`
+              );
+              shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                #include <begin_vertex>
+                vProgress = progress;
+                `
+              );
+              shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <common>',
+                `#include <common>
+                uniform float uTime;
+                varying float vProgress;`
+              );
+              shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <color_fragment>',
+                `
+                #include <color_fragment>
+                // Sharper, higher contrast chase effect
+                float chase = pow(sin(vProgress * 15.0 - uTime * 5.0) * 0.5 + 0.5, 2.0);
+                diffuseColor.rgb *= (0.05 + 0.95 * chase);
+                `
+              );
+            }}
          />
       </points>
 
