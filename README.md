@@ -66,9 +66,11 @@ When you enter a username:
 4. **View**: Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Environment Variables
-To enable the Instagram import feature, configure the following environment variable in your deployment platform (e.g., Vercel):
+For local development, create a `.env` file in the root directory. For deployment, configure these in your platform (e.g., Vercel):
 
 - `INSTAGRAM_WEBHOOK_URL`: The webhook endpoint URL for processing Instagram data imports.
+
+You can use `.env.example` as a template.
 
 ---
 
