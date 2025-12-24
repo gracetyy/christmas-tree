@@ -296,6 +296,63 @@ const CameraController: React.FC<{
   );
 };
 
+// Component to handle dynamic effects
+const PostProcessingEffects: React.FC<{
+  zoomLevel: ZoomLevel;
+  focusedPhoto: PhotoData | null;
+}> = ({ zoomLevel, focusedPhoto }) => {
+  const dofRef = useRef<any>(null);
+
+  useFrame((state, delta) => {
+    if (dofRef.current) {
+      // Dynamic Focus Logic
+      // If zoomed in, focus on the photo. If full tree, focus on center of tree.
+      const targetVec = new THREE.Vector3();
+      
+      if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
+        targetVec.set(...focusedPhoto.position);
+      } else {
+        targetVec.copy(CAMERA_CONFIG.LOOK_AT_OFFSET);
+      }
+      
+      // Smoothly interpolate the focus target
+      dofRef.current.target = targetVec;
+    }
+  });
+
+  return (
+    <EffectComposer disableNormalPass multisampling={0}>
+      {/* 
+         Selective Bloom:
+         Only pixels with luminance > 1.0 will bloom.
+         We achieve "selective" bloom by setting emissiveIntensity > 1 on lights/stars.
+      */}
+      <Bloom 
+        luminanceThreshold={1.2} // High threshold to only catch bright lights
+        mipmapBlur 
+        intensity={1.5} 
+        radius={0.6}
+        levels={9}
+      />
+      
+      {/* 
+        Cinematic Depth of Field (Bokeh)
+        Only apply strong bokeh when zoomed in to specific photos.
+        When viewing the full tree, reduce bokeh significantly or keep it minimal for a sharp view.
+      */}
+      <DepthOfField
+        ref={dofRef}
+        target={[0, 0, 0]} // Updated in useFrame
+        focalLength={0.02}
+        bokehScale={zoomLevel === ZoomLevel.ZOOMED_IN ? 6 : 0} // 0 means sharp in full view
+      />
+      
+      {/* Vignette for cinematic focus */}
+      <Vignette eskil={false} offset={0.1} darkness={1.1} />
+    </EffectComposer>
+  );
+};
+
 const Scene: React.FC<SceneProps> = ({
   photos,
   onUpload,

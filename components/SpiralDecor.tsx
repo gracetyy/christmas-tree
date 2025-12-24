@@ -256,6 +256,40 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         if (baubleMeshRef.current.instanceColor) baubleMeshRef.current.instanceColor.needsUpdate = true;
         baubleCapMeshRef.current.instanceMatrix.needsUpdate = true;
     }
+
+    // Update baubles with floating motion
+    if (baubleMeshRef.current) {
+        const tempObject = new THREE.Object3D();
+        baubles.forEach((b, i) => {
+            const dir = b.position.clone().normalize();
+            
+            // Floating motion in explode mode
+            const seed = Math.sin(b.position.x * 12.9898 + b.position.y * 78.233) * 43758.5453;
+            const floatTime = time * 0.4 + seed;
+            const drift = new THREE.Vector3(
+                Math.sin(floatTime) * 0.3,
+                Math.cos(floatTime * 0.7) * 0.3,
+                Math.sin(floatTime * 0.5) * 0.3
+            ).multiplyScalar(explodeProgress.current);
+
+            const baublePos = new THREE.Vector3(
+                b.position.x + dir.x * explodeProgress.current * 20 + drift.x,
+                b.position.y + dir.y * explodeProgress.current * 20 + drift.y,
+                b.position.z + dir.z * explodeProgress.current * 20 + drift.z
+            );
+
+            tempObject.position.copy(baublePos);
+            tempObject.rotation.set(
+                b.rotation[0] + (Math.sin(floatTime * 0.2) * 0.2 * explodeProgress.current),
+                b.rotation[1] + (Math.cos(floatTime * 0.3) * 0.2 * explodeProgress.current),
+                b.rotation[2]
+            );
+            tempObject.scale.setScalar(b.scale);
+            tempObject.updateMatrix();
+            baubleMeshRef.current!.setMatrixAt(i, tempObject.matrix);
+        });
+        baubleMeshRef.current.instanceMatrix.needsUpdate = true;
+    }
   });
 
   // Initialize matrices for baubles

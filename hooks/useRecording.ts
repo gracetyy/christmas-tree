@@ -29,6 +29,7 @@ export const useRecording = (photos: PhotoData[], onError?: (message: string) =>
             // Determine the best supported MIME type
             // Prioritize MP4 for better compatibility and quality
             const formats = [
+                'video/webm;codecs=vp8',
                 'video/mp4;codecs=h264',
                 'video/mp4',
                 'video/webm;codecs=vp8',
