@@ -228,7 +228,16 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
 
       const targetProgress = isExploded ? 1 : 0;
       const lerpFactor = isExploded ? 0.05 : 0.12;
-      explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+      const nextProgress = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+      
+      // Only update instance matrices if we are exploding/imploding
+      // or if we are currently exploded (to handle the extra rotation)
+      const isTransitioning = Math.abs(nextProgress - explodeProgress.current) > 0.0001;
+      const needsUpdate = isTransitioning || isExploded || (explodeProgress.current > 0.001);
+
+      explodeProgress.current = nextProgress;
+
+      if (!needsUpdate) return;
 
       const tempObject = new THREE.Object3D();
       const tempQuat = new THREE.Quaternion();

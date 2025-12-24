@@ -1,7 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, Environment, Sparkles, Text, Billboard, Hud } from '@react-three/drei';
+import { OrbitControls, Stars, Environment, Sparkles, AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
+import { EffectComposer, Bloom, Noise, Vignette, BrightnessContrast, ChromaticAberration, SMAA, DepthOfField } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import TreeMesh from './TreeMesh';
 import SpiralDecor from './SpiralDecor';
 import Polaroid from './Polaroid';
@@ -28,6 +30,26 @@ interface SceneProps {
 }
 
 const TREE_OFFSET_Y = -2;
+
+const SceneEffects: React.FC<{
+  zoomLevel: ZoomLevel;
+  focusedPhoto: PhotoData | null;
+  isRecording: boolean;
+  recordingType: 'FULL' | 'ALBUM' | null;
+  photos: PhotoData[];
+}> = () => {
+  return (
+    <EffectComposer disableNormalPass multisampling={4}>
+      <Bloom 
+        intensity={0.5} 
+        luminanceThreshold={0.9} 
+        luminanceSmoothing={0.9} 
+      />
+    
+      <Vignette eskil={false} offset={0.1} darkness={1.1} />
+    </EffectComposer>
+  );
+};
 
 const CameraController: React.FC<{
   zoomLevel: ZoomLevel;
@@ -104,23 +126,24 @@ const CameraController: React.FC<{
       const time = (performance.now() - recordingStartTime.current) / 1000;
 
       if (recordingType === 'FULL') {
-        // Full Tree Rotation
-        const angle = time * (Math.PI * 2 / 10); // 360 degrees in 10s
-        const radius = 32; // Standard view distance
+        // Full Tree Rotation - Faster (360 degrees in 3s)
+        const angle = time * (Math.PI * 2 / 8); 
+        const radius = 32; 
         camera.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
         camera.lookAt(0, -1, 0);
         if (controls) (controls as any).update();
         return;
       } else if (recordingType === 'ALBUM' && photos.length > 0) {
         // Album Mode - Cycle through photos
-        const photoInterval = 2.5; // 2.5s per photo
+        const photoInterval = 1; 
         const index = Math.min(Math.floor(time / photoInterval), photos.length - 1);
         const photo = photos[index];
 
         const orbitControls = controls as any;
         if (orbitControls) {
           const photoPos = new THREE.Vector3(...photo.position);
-          orbitControls.target.lerp(photoPos, 8 * delta);
+          photoPos.y += TREE_OFFSET_Y;
+          orbitControls.target.lerp(photoPos, 12 * delta); // Faster lerp
 
           const dist = 6;
           const angle = photo.rotation[1];
@@ -129,7 +152,7 @@ const CameraController: React.FC<{
           const camY = photoPos.y;
 
           const idealPos = new THREE.Vector3(camX, camY, camZ);
-          camera.position.lerp(idealPos, 8 * delta);
+          camera.position.lerp(idealPos, 12 * delta); // Faster lerp
           orbitControls.update();
         }
         return;
@@ -273,63 +296,6 @@ const CameraController: React.FC<{
   );
 };
 
-// Component to handle dynamic effects
-const PostProcessingEffects: React.FC<{
-  zoomLevel: ZoomLevel;
-  focusedPhoto: PhotoData | null;
-}> = ({ zoomLevel, focusedPhoto }) => {
-  const dofRef = useRef<any>(null);
-
-  useFrame((state, delta) => {
-    if (dofRef.current) {
-      // Dynamic Focus Logic
-      // If zoomed in, focus on the photo. If full tree, focus on center of tree.
-      const targetVec = new THREE.Vector3();
-      
-      if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
-        targetVec.set(...focusedPhoto.position);
-      } else {
-        targetVec.copy(CAMERA_CONFIG.LOOK_AT_OFFSET);
-      }
-      
-      // Smoothly interpolate the focus target
-      dofRef.current.target = targetVec;
-    }
-  });
-
-  return (
-    <EffectComposer disableNormalPass multisampling={0}>
-      {/* 
-         Selective Bloom:
-         Only pixels with luminance > 1.0 will bloom.
-         We achieve "selective" bloom by setting emissiveIntensity > 1 on lights/stars.
-      */}
-      <Bloom 
-        luminanceThreshold={1.2} // High threshold to only catch bright lights
-        mipmapBlur 
-        intensity={1.5} 
-        radius={0.6}
-        levels={9}
-      />
-      
-      {/* 
-        Cinematic Depth of Field (Bokeh)
-        Only apply strong bokeh when zoomed in to specific photos.
-        When viewing the full tree, reduce bokeh significantly or keep it minimal for a sharp view.
-      */}
-      <DepthOfField
-        ref={dofRef}
-        target={[0, 0, 0]} // Updated in useFrame
-        focalLength={0.02}
-        bokehScale={zoomLevel === ZoomLevel.ZOOMED_IN ? 6 : 0} // 0 means sharp in full view
-      />
-      
-      {/* Vignette for cinematic focus */}
-      <Vignette eskil={false} offset={0.1} darkness={1.1} />
-    </EffectComposer>
-  );
-};
-
 const Scene: React.FC<SceneProps> = ({
   photos,
   onUpload,
@@ -347,14 +313,14 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   return (
     <Canvas
-      dpr={[1, 1.5]} // clamp device pixel ratio to reduce GPU load on hi-DPI screens
+      dpr={[1, 2]}
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
       gl={{
         antialias: true,
         alpha: false,
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.0,
-        preserveDrawingBuffer: true, // required for clean downloads
+        preserveDrawingBuffer: true, 
         powerPreference: 'high-performance',
       }}
       style={{ background: COLORS.BACKGROUND, position: 'relative', zIndex: 0 }}
@@ -386,28 +352,6 @@ const Scene: React.FC<SceneProps> = ({
 
       {/* Global Snow Effect */}
       <Snow isExploded={isExploded} />
-
-      {/* Cinematic Greeting for Video Recording - rendered into the canvas so it's captured */}
-      {isRecording && (
-        <Hud>
-          <orthographicCamera makeDefault position={[0, 0, 10]} />
-          <group position={[0, 4.2, 0]}>
-            <Text
-              font="/fonts/GreatVibes-Regular.ttf"
-              fontSize={1.2}
-              color="#fff1a1"
-              anchorX="center"
-              anchorY="top"
-              outlineWidth={0.03}
-              outlineColor="#000000"
-              maxWidth={10}
-              textAlign="center"
-            >
-              {`Merry Christmas${userName ? ` ${userName}` : ''}!`}
-            </Text>
-          </group>
-        </Hud>
-      )}
 
       {/* 3D Scene Elements */}
       <group position={[0, TREE_OFFSET_Y, 0]}>
@@ -442,6 +386,14 @@ const Scene: React.FC<SceneProps> = ({
           />
         ))}
       </group>
+
+      <SceneEffects 
+        zoomLevel={zoomLevel} 
+        focusedPhoto={focusedPhoto} 
+        isRecording={isRecording}
+        recordingType={recordingType}
+        photos={photos}
+      />
     </Canvas>
   );
 };

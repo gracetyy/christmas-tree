@@ -33,10 +33,12 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
   const lineRef = useRef<THREE.Mesh>(null);
   const pointsRef = useRef<THREE.Points>(null);
   const baubleMeshRef = useRef<THREE.InstancedMesh>(null);
+  const baubleCapMeshRef = useRef<THREE.InstancedMesh>(null);
   const explodeProgress = useRef(0);
   
   const uniforms = useRef({
     uTime: { value: 0 },
+    uExplodeProgress: { value: 0 },
   }).current;
 
   const fluffTexture = useMemo(() => getFluffTexture(), []);
@@ -52,14 +54,15 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
   }, []);
 
   // Generate "Fluffy" Tinsel Particles
-  const { tinselGeo, initialTinselPositions } = useMemo(() => {
-    const curvePoints = curve.getSpacedPoints(1200); 
-    const particlesPerPoint = 12; 
+  const { tinselGeo } = useMemo(() => {
+    const curvePoints = curve.getSpacedPoints(800); 
+    const particlesPerPoint = 8; 
     const totalParticles = curvePoints.length * particlesPerPoint;
     
     const positions = new Float32Array(totalParticles * 3);
     const colors = new Float32Array(totalParticles * 3);
     const progress = new Float32Array(totalParticles);
+    const explodeDirs = new Float32Array(totalParticles * 3);
     
     const baseColor = new THREE.Color(COLORS.SPIRAL_LIGHT);
     const glowColor = new THREE.Color('#ffffff'); 
@@ -83,6 +86,11 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         positions[idx * 3] = x;
         positions[idx * 3 + 1] = y;
         positions[idx * 3 + 2] = z;
+
+        const dir = new THREE.Vector3(x, y, z).normalize();
+        explodeDirs[idx * 3] = dir.x * 15.0;
+        explodeDirs[idx * 3 + 1] = dir.y * 15.0;
+        explodeDirs[idx * 3 + 2] = dir.z * 15.0;
         
         // Color variation
         const mix = Math.random() * 0.5; // Mostly gold/spiral color, some white
@@ -100,11 +108,12 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
     }
     
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3)); // Use a copy for the attribute
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+    geo.setAttribute('explodeDir', new THREE.BufferAttribute(explodeDirs, 3));
     
-    return { tinselGeo: geo, initialTinselPositions: positions };
+    return { tinselGeo: geo };
   }, [curve]);
 
   // Generate decorative balls
@@ -183,48 +192,35 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
     uniforms.uTime.value = time;
+    
     const targetProgress = isExploded ? 1 : 0;
-    const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
-    explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+    const lerpFactor = isExploded ? 0.05 : 0.12;
+    const nextProgress = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+    
+    const isTransitioning = Math.abs(nextProgress - explodeProgress.current) > 0.0001;
+    const needsUpdate = isTransitioning || isExploded || (explodeProgress.current > 0.001);
+    
+    explodeProgress.current = nextProgress;
+    uniforms.uExplodeProgress.value = nextProgress;
 
     if (lineRef.current) {
         const material = lineRef.current.material as THREE.MeshStandardMaterial;
-        // Pulse effect for the "Light" string
         const pulse = (Math.sin(time * 3.0) * 0.3 + 0.7); 
         material.emissiveIntensity = 3.0 * pulse * (1 - explodeProgress.current);
-        
         lineRef.current.scale.setScalar(1 - explodeProgress.current);
         lineRef.current.visible = explodeProgress.current < 0.95;
     }
 
-    // Twinkle the fluff slightly by rotating or scaling
     if (pointsRef.current) {
-        // Very slow drift to make it feel alive
         pointsRef.current.rotation.y = Math.sin(time * 0.5) * 0.02;
-
-        // Scatter points
-        const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
-        
-        for (let i = 0; i < positions.length; i += 3) {
-            const x = initialTinselPositions[i];
-            const y = initialTinselPositions[i+1];
-            const z = initialTinselPositions[i+2];
-            
-            const dir = new THREE.Vector3(x, y, z).normalize();
-            positions[i] = x + dir.x * explodeProgress.current * 15;
-            positions[i+1] = y + dir.y * explodeProgress.current * 15;
-            positions[i+2] = z + dir.z * explodeProgress.current * 15;
-        }
-        pointsRef.current.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Update baubles with floating motion
-    if (baubleMeshRef.current) {
+    if (needsUpdate && baubleMeshRef.current && baubleCapMeshRef.current) {
         const tempObject = new THREE.Object3D();
+        const tempCapObject = new THREE.Object3D();
+        
         baubles.forEach((b, i) => {
             const dir = b.position.clone().normalize();
-            
-            // Floating motion in explode mode
             const seed = Math.sin(b.position.x * 12.9898 + b.position.y * 78.233) * 43758.5453;
             const floatTime = time * 0.4 + seed;
             const drift = new THREE.Vector3(
@@ -248,17 +244,53 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
             tempObject.scale.setScalar(b.scale);
             tempObject.updateMatrix();
             baubleMeshRef.current!.setMatrixAt(i, tempObject.matrix);
+            baubleMeshRef.current!.setColorAt(i, new THREE.Color(b.color));
+
+            tempCapObject.position.copy(baublePos).add(new THREE.Vector3(0, 0.9 * b.scale, 0));
+            tempCapObject.rotation.copy(tempObject.rotation);
+            tempCapObject.scale.setScalar(b.scale);
+            tempCapObject.updateMatrix();
+            baubleCapMeshRef.current!.setMatrixAt(i, tempCapObject.matrix);
         });
         baubleMeshRef.current.instanceMatrix.needsUpdate = true;
+        if (baubleMeshRef.current.instanceColor) baubleMeshRef.current.instanceColor.needsUpdate = true;
+        baubleCapMeshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
+
+  // Initialize matrices for baubles
+  React.useLayoutEffect(() => {
+    if (baubleMeshRef.current && baubleCapMeshRef.current) {
+      const tempObject = new THREE.Object3D();
+      const tempCapObject = new THREE.Object3D();
+      
+      baubles.forEach((b, i) => {
+        tempObject.position.copy(b.position);
+        tempObject.rotation.set(b.rotation[0], b.rotation[1], b.rotation[2]);
+        tempObject.scale.setScalar(b.scale);
+        tempObject.updateMatrix();
+        baubleMeshRef.current!.setMatrixAt(i, tempObject.matrix);
+        baubleMeshRef.current!.setColorAt(i, new THREE.Color(b.color));
+
+        tempCapObject.position.copy(b.position).add(new THREE.Vector3(0, 0.9 * b.scale, 0));
+        tempCapObject.rotation.set(b.rotation[0], b.rotation[1], b.rotation[2]);
+        tempCapObject.scale.setScalar(b.scale);
+        tempCapObject.updateMatrix();
+        baubleCapMeshRef.current!.setMatrixAt(i, tempCapObject.matrix);
+      });
+      
+      baubleMeshRef.current.instanceMatrix.needsUpdate = true;
+      if (baubleMeshRef.current.instanceColor) baubleMeshRef.current.instanceColor.needsUpdate = true;
+      baubleCapMeshRef.current.instanceMatrix.needsUpdate = true;
+    }
+  }, [baubles]);
 
 
   return (
     <group>
       {/* The Spiral String - Core */}
       <mesh ref={lineRef}>
-        <tubeGeometry args={[curve, 500, SPIRAL_CONFIG.THICKNESS * 0.6, 12, false]} />
+        <tubeGeometry args={[curve, 300, SPIRAL_CONFIG.THICKNESS * 0.6, 8, false]} />
         <meshStandardMaterial 
           color={COLORS.SPIRAL_LIGHT} 
           emissive={COLORS.SPIRAL_LIGHT}
@@ -284,8 +316,8 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
               '#include <emissivemap_fragment>',
               `
               #include <emissivemap_fragment>
-              float chase = sin(vUv.x * 20.0 - uTime * 4.0) * 0.5 + 0.5;
-              totalEmissiveRadiance *= (0.2 + 0.8 * chase);
+              float chase = sin(vUv.x * 15.0 - uTime * 3.0) * 0.5 + 0.5;
+              totalEmissiveRadiance *= (0.4 + 0.6 * chase);
               `
             );
           }}
@@ -295,7 +327,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
       {/* Volumetric Glow Shell */}
       {!isExploded && (
         <mesh>
-            <tubeGeometry args={[curve, 500, SPIRAL_CONFIG.THICKNESS * 2.5, 8, false]} />
+            <tubeGeometry args={[curve, 200, SPIRAL_CONFIG.THICKNESS * 2.5, 6, false]} />
             <meshBasicMaterial 
                 color={COLORS.SPIRAL_LIGHT}
                 transparent
@@ -320,8 +352,8 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
                     '#include <color_fragment>',
                     `
                     #include <color_fragment>
-                    float chase = sin(vUv.x * 20.0 - uTime * 4.0) * 0.5 + 0.5;
-                    diffuseColor.a *= (0.1 + 0.9 * chase);
+                    float chase = sin(vUv.x * 15.0 - uTime * 3.0) * 0.5 + 0.5;
+                    diffuseColor.a *= (0.3 + 0.7 * chase);
                     `
                   );
                 }}
@@ -345,10 +377,13 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
             toneMapped={false}
             onBeforeCompile={(shader) => {
               shader.uniforms.uTime = uniforms.uTime;
+              shader.uniforms.uExplodeProgress = uniforms.uExplodeProgress;
               shader.vertexShader = shader.vertexShader.replace(
                 '#include <common>',
                 `#include <common>
                 attribute float progress;
+                attribute vec3 explodeDir;
+                uniform float uExplodeProgress;
                 varying float vProgress;`
               );
               shader.vertexShader = shader.vertexShader.replace(
@@ -356,6 +391,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
                 `
                 #include <begin_vertex>
                 vProgress = progress;
+                transformed += explodeDir * uExplodeProgress;
                 `
               );
               shader.fragmentShader = shader.fragmentShader.replace(
@@ -368,9 +404,9 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
                 '#include <color_fragment>',
                 `
                 #include <color_fragment>
-                // Sharper, higher contrast chase effect
-                float chase = pow(sin(vProgress * 15.0 - uTime * 5.0) * 0.5 + 0.5, 2.0);
-                diffuseColor.rgb *= (0.05 + 0.95 * chase);
+                // Simplified chase effect for performance
+                float chase = sin(vProgress * 10.0 - uTime * 3.0) * 0.5 + 0.5;
+                diffuseColor.rgb *= (0.2 + 0.8 * chase);
                 `
               );
             }}
@@ -385,34 +421,21 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         </>
       )}
 
-      {/* Decorative Ornaments */}
-      {baubles.map((b, i) => {
-        const dir = b.position.clone().normalize();
-        const exPos = new THREE.Vector3(
-            b.position.x + dir.x * explodeProgress.current * 20,
-            b.position.y + dir.y * explodeProgress.current * 20,
-            b.position.z + dir.z * explodeProgress.current * 20
-        );
-
-        return (
-            <group key={i} position={exPos} rotation={b.rotation as any} scale={[b.scale, b.scale, b.scale]}>
-                <mesh>
-        <sphereGeometry args={[1, 32, 32]} />
+      {/* Decorative Ornaments - Instanced */}
+      <instancedMesh ref={baubleMeshRef} args={[undefined, undefined, baubles.length]}>
+        <sphereGeometry args={[1, 24, 24]} />
         <meshStandardMaterial 
-        color={b.color}
-                        emissive={b.color}
-                        emissiveIntensity={0.4}
-            metalness={0.9} 
-            roughness={0.1} 
-            />
-                </mesh>
-                <mesh position={[0, 0.9, 0]}>
-                    <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} />
-                    <meshStandardMaterial color={COLORS.DECORATION_GOLD} metalness={1} roughness={0.3} />
-      </mesh>
-            </group>
-        );
-      })}
+          metalness={0.9} 
+          roughness={0.1} 
+          emissive="#ffffff"
+          emissiveIntensity={0.2}
+        />
+      </instancedMesh>
+      
+      <instancedMesh ref={baubleCapMeshRef} args={[undefined, undefined, baubles.length]}>
+        <cylinderGeometry args={[0.2, 0.2, 0.25, 12]} />
+        <meshStandardMaterial color={COLORS.DECORATION_GOLD} metalness={1} roughness={0.3} />
+      </instancedMesh>
     </group>
   );
 };
