@@ -11,6 +11,7 @@ import { useRecording } from './hooks/useRecording';
 import { useInstagram } from './hooks/useInstagram';
 import { useTreeInteraction } from './hooks/useTreeInteraction';
 import { processImageWithPadding } from './utils/image';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 const App: React.FC = () => {
   const [controlMode, setControlMode] = useState<ControlMode>(ControlMode.MOUSE);
@@ -19,6 +20,12 @@ const App: React.FC = () => {
   const [userName, setUserName] = useState('');
   const [isNameSet, setIsNameSet] = useState(false);
   const [isHandReady, setIsHandReady] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  }, []);
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -43,7 +50,7 @@ const App: React.FC = () => {
 
   // Custom Hooks
   const { isMusicPlaying, toggleMusic, audioRef } = useAudio();
-  const { isRecording, recordingType, handleRecordVideo } = useRecording(photos);
+  const { isRecording, recordingType, handleRecordVideo } = useRecording(photos, (msg) => showToast(msg, 'error'));
   const {
     isInstaModalOpen,
     setIsInstaModalOpen,
@@ -56,7 +63,8 @@ const App: React.FC = () => {
     onComplete: (lastPhoto) => {
       setInteractionMode(InteractionMode.VIEW);
       handlePhotoClick(lastPhoto);
-    }
+    },
+    onError: (message) => showToast(message, 'error')
   });
 
   const {
@@ -80,9 +88,12 @@ const App: React.FC = () => {
 
   // Request Camera permissions when switching to hand mode
   useEffect(() => {
+    let currentStream: MediaStream | null = null;
+
     if (controlMode === ControlMode.HAND) {
       navigator.mediaDevices.getUserMedia({ video: true })
         .then((stream) => {
+          currentStream = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             setIsHandReady(true);
@@ -90,18 +101,24 @@ const App: React.FC = () => {
         })
         .catch((err) => {
           console.error("Camera denied:", err);
-          alert("Please enable camera access for hand gestures.");
+          showToast("Please enable camera access for hand gestures.", 'error');
           setControlMode(ControlMode.MOUSE);
         });
     } else {
       // Stop stream if exists
       if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(t => t.stop());
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(t => t.stop());
         videoRef.current.srcObject = null;
-        setIsHandReady(false);
       }
+      setIsHandReady(false);
     }
+
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+      }
+    };
   }, [controlMode]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -232,6 +249,7 @@ const App: React.FC = () => {
         setIsNameSet={setIsNameSet}
         onRecordVideo={handleRecordVideo}
         isRecording={isRecording}
+        isExploded={isExploded}
       />
 
       <InstagramModal
@@ -249,6 +267,45 @@ const App: React.FC = () => {
         onGesture={handleGesture}
         videoRef={videoRef}
       />
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-8 fade-in duration-300">
+          <div className={`min-w-[300px] max-w-md p-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${
+            toast.type === 'error' 
+              ? 'bg-red-950/40 border-red-500/30 text-red-100' 
+              : 'bg-green-950/40 border-green-500/30 text-green-100'
+          } flex items-start gap-4 relative overflow-hidden group`}>
+            {/* Progress bar background */}
+            <div className="absolute bottom-0 left-0 h-1 bg-white/10 w-full" />
+            {/* Animated progress bar */}
+            <div className={`absolute bottom-0 left-0 h-1 ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'} animate-[shrink_5s_linear_forwards]`} />
+            
+            <div className={`p-2 rounded-xl ${toast.type === 'error' ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
+              {toast.type === 'error' ? (
+                <AlertCircle className="w-5 h-5 text-red-400" />
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+              )}
+            </div>
+            
+            <div className="flex-1 pt-0.5">
+              <h4 className="text-sm font-bold tracking-tight mb-1">
+                {toast.type === 'error' ? 'Something went wrong' : 'Success!'}
+              </h4>
+              <p className="text-xs text-white/70 leading-relaxed font-medium">
+                {toast.message}
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setToast(null)}
+              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/40 hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

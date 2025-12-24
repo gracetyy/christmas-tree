@@ -146,21 +146,32 @@ const PresentBox: React.FC<PresentProps & { isExploded: boolean }> = ({
   const groupRef = useRef<THREE.Group>(null);
   const progress = useRef(0);
 
-  useFrame(() => {
+  useFrame((state) => {
     const target = isExploded ? 1 : 0;
     const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
     progress.current = THREE.MathUtils.lerp(progress.current, target, lerpFactor);
     
     if (groupRef.current && explodeDir && explodeRotation) {
+      const time = state.clock.elapsedTime;
+      const seed = Math.sin(position.x * 12.9898 + position.z * 78.233) * 43758.5453;
+      const floatTime = time * 0.4 + seed;
+      
+      // Floating motion in explode mode
+      const drift = new THREE.Vector3(
+        Math.sin(floatTime) * 0.4,
+        Math.cos(floatTime * 0.8) * 0.4,
+        Math.sin(floatTime * 0.6) * 0.4
+      ).multiplyScalar(progress.current);
+
       groupRef.current.position.set(
-        position.x + explodeDir.x * progress.current,
-        position.y + explodeDir.y * progress.current,
-        position.z + explodeDir.z * progress.current
+        position.x + explodeDir.x * progress.current + drift.x,
+        position.y + explodeDir.y * progress.current + drift.y,
+        position.z + explodeDir.z * progress.current + drift.z
       );
       
       groupRef.current.rotation.set(
-        rotation.x + explodeRotation.x * progress.current,
-        rotation.y + explodeRotation.y * progress.current,
+        rotation.x + explodeRotation.x * progress.current + (Math.sin(floatTime * 0.2) * 0.2 * progress.current),
+        rotation.y + explodeRotation.y * progress.current + (Math.cos(floatTime * 0.3) * 0.2 * progress.current),
         rotation.z + explodeRotation.z * progress.current
       );
     }

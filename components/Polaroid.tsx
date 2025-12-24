@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Html, useTexture } from '@react-three/drei';
 import { Trash2 } from 'lucide-react';
 import { COLORS, PLACEHOLDER_TYPES } from '../constants';
@@ -58,14 +58,64 @@ const Polaroid: React.FC<PolaroidProps> = ({
       const time = state.clock.elapsedTime;
       const swayAmount = 0.05;
       
-      groupRef.current.position.set(
+      // Base position (on the tree or exploding away)
+      const basePos = new THREE.Vector3(
         data.position[0] + explodeDir.x * explodeProgress.current,
         data.position[1] + explodeDir.y * explodeProgress.current,
         data.position[2] + explodeDir.z * explodeProgress.current
       );
 
-      groupRef.current.rotation.z = data.rotation[1] * 0 + Math.sin(time + data.position[1]) * swayAmount + explodeProgress.current * 5;
-      groupRef.current.rotation.y = data.rotation[1] + Math.sin(time * 0.5 + data.position[0]) * 0.02 + explodeProgress.current * 5;
+      if (explodeProgress.current > 0.01) {
+        // Calculate a position in front of the camera for "floating" effect
+        const cam = state.camera;
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+        
+        // Use a deterministic scatter based on the photo's original position
+        const seed = Math.sin(data.position[0] * 12.9898 + data.position[1] * 78.233) * 43758.5453;
+        const offsetX = ((seed * 100) % 10) - 5;
+        const offsetY = ((seed * 1000) % 6) - 1; // Moved upward (was -3)
+        const offsetZ = 8 + ((seed * 10) % 4); // 8-12 units in front
+        
+        // Add some "outer space" floating motion
+        const floatTime = time * 0.3;
+        const driftX = Math.sin(floatTime + seed) * 0.5;
+        const driftY = Math.cos(floatTime * 0.7 + seed) * 0.5;
+        const driftZ = Math.sin(floatTime * 0.5 + seed) * 0.3;
+
+        const floatingPos = cam.position.clone()
+          .add(forward.multiplyScalar(offsetZ + driftZ))
+          .add(right.multiplyScalar(offsetX + driftX))
+          .add(up.multiplyScalar(offsetY + driftY));
+
+        // Lerp between base (exploding) position and floating position
+        const floatFactor = Math.pow(explodeProgress.current, 2); 
+        groupRef.current.position.lerpVectors(basePos, floatingPos, floatFactor);
+        
+        // Rotation: Blend between original rotation and facing camera with slight wobble
+        const targetQuat = cam.quaternion.clone();
+        const wobble = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+            Math.sin(time * 0.2 + seed) * 0.1,
+            Math.cos(time * 0.3 + seed) * 0.1,
+            Math.sin(time * 0.5 + seed) * 0.1
+        ));
+        targetQuat.multiply(wobble);
+
+        const baseQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+            0, 
+            data.rotation[1] + Math.sin(time * 0.5 + data.position[0]) * 0.02 + explodeProgress.current * 5,
+            Math.sin(time + data.position[1]) * swayAmount + explodeProgress.current * 5
+        ));
+        groupRef.current.quaternion.slerpQuaternions(baseQuat, targetQuat, floatFactor);
+      } else {
+        groupRef.current.position.copy(basePos);
+        groupRef.current.rotation.set(
+            0,
+            data.rotation[1] + Math.sin(time * 0.5 + data.position[0]) * 0.02,
+            Math.sin(time + data.position[1]) * swayAmount
+        );
+      }
 
       // Adjusted Base scale
       const baseScale = 0.85; 
@@ -115,7 +165,7 @@ const Polaroid: React.FC<PolaroidProps> = ({
       onClick={handleClick}
     >
       {/* The String */}
-      <mesh position={[0, -0.25, 0]}>
+      <mesh position={[0, -0.25, 0]} visible={!isExploded && explodeProgress.current < 0.1}>
         <cylinderGeometry args={[0.015, 0.015, 0.5]} />
         <meshStandardMaterial color="#e0e0e0" roughness={0.5} />
       </mesh>

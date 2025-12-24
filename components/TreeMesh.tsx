@@ -4,6 +4,56 @@ import { useFrame } from '@react-three/fiber';
 import { COLORS, TREE_CONFIG } from '../constants';
 import { PhotoData } from '../types';
 
+const getLeafTexture = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    // Fill with white so vertex colors show through perfectly
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Dark green for veins with lower opacity
+    ctx.strokeStyle = 'rgba(15, 120, 50, 0.35)'; 
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const centerX = 128;
+    const centerY = 128;
+    const size = 220; // ~85% of 256
+
+    // Central vein - from top to bottom
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - size/2);
+    ctx.lineTo(centerX, centerY + size/2);
+    ctx.stroke();
+
+    // Side veins - pointing downwards (towards the base)
+    ctx.lineWidth = 4;
+    const numVeins = 5;
+    for (let i = 0; i < numVeins; i++) {
+      const y = (centerY - size/2 + 30) + i * (size / (numVeins + 1));
+      const spread = 60 + i * 10;
+      const drop = 35;
+      // Left
+      ctx.beginPath();
+      ctx.moveTo(centerX, y);
+      ctx.lineTo(centerX - spread, y + drop);
+      ctx.stroke();
+      // Right
+      ctx.beginPath();
+      ctx.moveTo(centerX, y);
+      ctx.lineTo(centerX + spread, y + drop);
+      ctx.stroke();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+};
+
 interface TreeMeshProps {
   isExploded?: boolean;
   photos?: PhotoData[];
@@ -14,27 +64,49 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
   const outerMeshRef = useRef<THREE.InstancedMesh>(null);
   const explodeProgress = useRef(0);
 
-  const heartGeometry = useMemo(() => {
+  const leafTexture = useMemo(() => getLeafTexture(), []);
+
+  const leafGeometry = useMemo(() => {
     const shape = new THREE.Shape();
-    // Define a more elongated, pointy heart shape where the tip is at the top
-    // Increased base dimensions for larger hearts
-    shape.moveTo(0, 1.5);
-    shape.bezierCurveTo(0.4, 0.6, 0.9, 0.4, 0.9, -0.1);
-    shape.bezierCurveTo(0.9, -0.7, 0.4, -1.1, 0, -0.6);
-    shape.bezierCurveTo(-0.4, -1.1, -0.9, -0.7, -0.9, -0.1);
-    shape.bezierCurveTo(-0.9, 0.4, -0.4, 0.6, 0, 1.5);
+    // Define a stylized leaf shape (pointy at both ends, wider in the middle)
+    shape.moveTo(0, 1.6); // Top tip
+    shape.bezierCurveTo(0.8, 0.8, 0.8, -0.4, 0, -1.2); // Right side
+    shape.bezierCurveTo(-0.8, -0.4, -0.8, 0.8, 0, 1.6); // Left side
 
     const extrudeSettings = {
-      depth: 0.25,
+      depth: 0.2,
       bevelEnabled: true,
       bevelSegments: 3,
       steps: 1,
-      bevelSize: 0.12,
-      bevelThickness: 0.12,
+      bevelSize: 0.1,
+      bevelThickness: 0.05,
     };
 
     const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     geo.center();
+
+    // Normalize UVs for the front/back faces to fit the texture perfectly
+    const pos = geo.attributes.position;
+    const uv = geo.attributes.uv;
+    const min = new THREE.Vector2(Infinity, Infinity);
+    const max = new THREE.Vector2(-Infinity, -Infinity);
+
+    for (let i = 0; i < pos.count; i++) {
+      min.x = Math.min(min.x, pos.getX(i));
+      min.y = Math.min(min.y, pos.getY(i));
+      max.x = Math.max(max.x, pos.getX(i));
+      max.y = Math.max(max.y, pos.getY(i));
+    }
+
+    const range = new THREE.Vector2().subVectors(max, min);
+    for (let i = 0; i < uv.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      // Map X/Y positions to 0-1 UV range
+      uv.setXY(i, (x - min.x) / range.x, (y - min.y) / range.y);
+    }
+    uv.needsUpdate = true;
+
     return geo;
   }, []);
 
@@ -99,26 +171,41 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
       const wobbleFactor = 0.6 * (1 - yNorm * 0.85);
       const wobble = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(
-          (Math.random() - 0.5) * wobbleFactor,
+          (Math.random() * 1.2 - 0.1) * wobbleFactor,
           (Math.random() - 0.5) * wobbleFactor,
           (Math.random() - 0.5) * wobbleFactor
         )
       );
       quaternion.multiply(wobble);
 
-      const explodeDir = new THREE.Vector3(x, y, z).normalize().multiplyScalar(10 + Math.random() * 20);
+            const explodeDir = new THREE.Vector3(x, y, z).normalize().multiplyScalar(10 + Math.random() * 20);
       const color = new THREE.Color().lerpColors(
         new THREE.Color(COLORS.TREE_BOTTOM),
         new THREE.Color(COLORS.TREE_TOP),
         yNorm
       );
 
-      // Scale decreases as we go up the tree (yNorm: 0 at bottom, 1 at top)
+      // Add random color variation for leaf particles
+      if (isOuter) {
+        const hueShift = (Math.random() - 0.5) * 0.05;
+        const saturationShift = (Math.random() - 0.5) * 0.1;
+        const lightnessShift = (Math.random() - 0.5) * 0.1;
+        
+        const hsl = { h: 0, s: 0, l: 0 };
+        color.getHSL(hsl);
+        color.setHSL(
+          THREE.MathUtils.clamp(hsl.h + hueShift, 0, 1),
+          THREE.MathUtils.clamp(hsl.s + saturationShift, 0, 1),
+          THREE.MathUtils.clamp(hsl.l + lightnessShift, 0, 1)
+        );
+      }
+
       const heightScale = 1.0 - (yNorm * 0.4);
       const particleData = { 
         position: [x, y, z], 
         quaternion: [quaternion.x, quaternion.y, quaternion.z, quaternion.w], 
-        scale: (Math.random() * 0.5 + 0.5) * heightScale, 
+        scale: (Math.random() * 0.5 + 0.5) * heightScale ** 2, 
+        thickness: 0.2 + Math.random() * 0.05, // Thinner leaves
         color,
         explodeDir: [explodeDir.x, explodeDir.y, explodeDir.z]
       };
@@ -174,8 +261,9 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
         // Make outer hearts 1.5x larger than inner particles
         const isOuterParticle = particles === outerParticles;
         const scale = (baseScale * (isOuterParticle ? 1.5 : 1.0)) * (1 - explodeProgress.current * 0.5);
+        const thickness = (p.thickness || 1.0) * scale;
         
-        tempObject.scale.set(scale, scale, scale);
+        tempObject.scale.set(scale, scale, thickness);
         tempObject.updateMatrix();
         mesh.setMatrixAt(i, tempObject.matrix);
       });
@@ -199,8 +287,9 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
         const baseScale = p.scale as number * TREE_CONFIG.PARTICLE_SIZE;
         const isOuterParticle = particles === outerParticles;
         const scale = baseScale * (isOuterParticle ? 1.5 : 1.0);
+        const thickness = (p.thickness || 1.0) * scale;
         
-        tempObject.scale.set(scale, scale, scale);
+        tempObject.scale.set(scale, scale, thickness);
         tempObject.updateMatrix();
         
         mesh.setMatrixAt(i, tempObject.matrix);
@@ -222,9 +311,15 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) 
         <meshStandardMaterial roughness={0.8} metalness={0.1} />
       </instancedMesh>
 
-      {/* Outer layers with heart shapes */}
-      <instancedMesh ref={outerMeshRef} args={[heartGeometry, undefined, outerParticles.length]}>
-        <meshStandardMaterial roughness={0.6} metalness={0.1} />
+      {/* Outer layers with leaf shapes */}
+      <instancedMesh ref={outerMeshRef} args={[leafGeometry, undefined, outerParticles.length]}>
+        <meshStandardMaterial 
+          map={leafTexture}
+          roughness={0.5} 
+          metalness={0.9}
+          emissive={new THREE.Color(0x051005)}
+          emissiveIntensity={0.5}
+        />
       </instancedMesh>
     </group>
   );

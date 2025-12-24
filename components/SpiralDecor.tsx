@@ -32,6 +32,7 @@ interface SpiralDecorProps {
 const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = [] }) => {
   const lineRef = useRef<THREE.Mesh>(null);
   const pointsRef = useRef<THREE.Points>(null);
+  const baubleMeshRef = useRef<THREE.InstancedMesh>(null);
   const explodeProgress = useRef(0);
   
   const uniforms = useRef({
@@ -110,15 +111,15 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
   const baubles = useMemo(() => {
     const items = [];
     const count = 100; // Increased count for fuller bottom
-    const photoCenters = photos.map(p => new THREE.Vector3(p.position[0], p.position[1] - 1.25, p.position[2]));
+    const photoCenters = photos.map(p => new THREE.Vector3(p.position[0], p.position[1], p.position[2]));
     
     for (let i = 0; i < count; i++) {
       let x = 0, y = 0, z = 0;
       let attempts = 0;
       let collides = true;
-      const BAUBLE_COLLISION_RADIUS = 0.4;
+      const BAUBLE_COLLISION_RADIUS = 0.8; // Increased to avoid polaroids better
 
-      while (collides && attempts < 20) {
+      while (collides && attempts < 30) {
         const rawRandom = Math.random();
         // Bias more towards bottom (higher power) and cap height to avoid star position
         const h = Math.pow(rawRandom, 2.2) * 0.85; 
@@ -127,7 +128,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         const maxRadius = TREE_CONFIG.RADIUS_BOTTOM * (1 - h);
         
         // Place outside the tree mesh to ensure they are visible and don't clip with branches
-        const r = maxRadius * (1.05 + Math.random() * 0.1); 
+        const r = maxRadius * (1.1 + Math.random() * 0.15); 
         
         const theta = Math.random() * Math.PI * 2;
         x = r * Math.cos(theta);
@@ -141,7 +142,8 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
           const dy = y - center.y;
           const dz = z - center.z;
           const distSq = dx*dx + dy*dy + dz*dz;
-          if (distSq < TREE_CONFIG.COLLISION_RADIUS ** 2) {
+          // Polaroids are roughly 1.5 units tall, so we need a larger vertical check or just a larger radius
+          if (distSq < 1.8) { // Increased collision distance
             collides = true;
             break;
           }
@@ -215,7 +217,42 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         }
         pointsRef.current.geometry.attributes.position.needsUpdate = true;
     }
+
+    // Update baubles with floating motion
+    if (baubleMeshRef.current) {
+        const tempObject = new THREE.Object3D();
+        baubles.forEach((b, i) => {
+            const dir = b.position.clone().normalize();
+            
+            // Floating motion in explode mode
+            const seed = Math.sin(b.position.x * 12.9898 + b.position.y * 78.233) * 43758.5453;
+            const floatTime = time * 0.4 + seed;
+            const drift = new THREE.Vector3(
+                Math.sin(floatTime) * 0.3,
+                Math.cos(floatTime * 0.7) * 0.3,
+                Math.sin(floatTime * 0.5) * 0.3
+            ).multiplyScalar(explodeProgress.current);
+
+            const baublePos = new THREE.Vector3(
+                b.position.x + dir.x * explodeProgress.current * 20 + drift.x,
+                b.position.y + dir.y * explodeProgress.current * 20 + drift.y,
+                b.position.z + dir.z * explodeProgress.current * 20 + drift.z
+            );
+
+            tempObject.position.copy(baublePos);
+            tempObject.rotation.set(
+                b.rotation[0] + (Math.sin(floatTime * 0.2) * 0.2 * explodeProgress.current),
+                b.rotation[1] + (Math.cos(floatTime * 0.3) * 0.2 * explodeProgress.current),
+                b.rotation[2]
+            );
+            tempObject.scale.setScalar(b.scale);
+            tempObject.updateMatrix();
+            baubleMeshRef.current!.setMatrixAt(i, tempObject.matrix);
+        });
+        baubleMeshRef.current.instanceMatrix.needsUpdate = true;
+    }
   });
+
 
   return (
     <group>
@@ -359,19 +396,19 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         return (
             <group key={i} position={exPos} rotation={b.rotation as any} scale={[b.scale, b.scale, b.scale]}>
                 <mesh>
-                    <sphereGeometry args={[1, 32, 32]} />
-                    <meshStandardMaterial 
-                        color={b.color}
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshStandardMaterial 
+        color={b.color}
                         emissive={b.color}
                         emissiveIntensity={0.4}
-                        metalness={0.9} 
-                        roughness={0.1} 
-                    />
+            metalness={0.9} 
+            roughness={0.1} 
+            />
                 </mesh>
                 <mesh position={[0, 0.9, 0]}>
                     <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} />
                     <meshStandardMaterial color={COLORS.DECORATION_GOLD} metalness={1} roughness={0.3} />
-                </mesh>
+      </mesh>
             </group>
         );
       })}
