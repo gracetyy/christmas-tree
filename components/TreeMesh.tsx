@@ -2,30 +2,55 @@ import React, { useMemo, useRef, useLayoutEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { COLORS, TREE_CONFIG } from '../constants';
+import { PhotoData } from '../types';
 
 interface TreeMeshProps {
   isExploded?: boolean;
+  photos?: PhotoData[];
 }
 
-const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false }) => {
+const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false, photos = [] }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const explodeProgress = useRef(0);
 
   // Generate particles for the tree body
   const particles = useMemo(() => {
     const temp = [];
+    const photoCenters = photos.map(p => new THREE.Vector3(p.position[0], p.position[1] - 1.25, p.position[2]));
+
     for (let i = 0; i < TREE_CONFIG.PARTICLE_COUNT; i++) {
-      const rawRandom = Math.random();
-      const yNorm = Math.pow(rawRandom, 1.2); // Less bias for fuller top in new config
-      
-      const y = (yNorm * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
-      const rMax = TREE_CONFIG.RADIUS_BOTTOM * (1 - yNorm);
-      
-      const r = Math.sqrt(Math.random()) * rMax;
-      const theta = Math.random() * Math.PI * 2;
-      
-      const x = r * Math.cos(theta);
-      const z = r * Math.sin(theta);
+      let x = 0, y = 0, z = 0, yNorm = 0;
+      let attempts = 0;
+      let collides = true;
+
+      while (collides && attempts < 10) {
+        const rawRandom = Math.random();
+        yNorm = Math.pow(rawRandom, 1.2); // Less bias for fuller top in new config
+        
+        y = (yNorm * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
+        const rMax = TREE_CONFIG.RADIUS_BOTTOM * (1 - yNorm);
+        
+        const r = Math.sqrt(Math.random()) * rMax;
+        const theta = Math.random() * Math.PI * 2;
+        
+        x = r * Math.cos(theta);
+        z = r * Math.sin(theta);
+
+        collides = false;
+        for (const center of photoCenters) {
+          const dx = x - center.x;
+          const dy = y - center.y;
+          const dz = z - center.z;
+          const distSq = dx*dx + dy*dy + dz*dz;
+          if (distSq < TREE_CONFIG.COLLISION_RADIUS ** 2) {
+            collides = true;
+            break;
+          }
+        }
+        attempts++;
+      }
+
+      if (collides) continue;
       
       const rotX = Math.random() * Math.PI;
       const rotY = Math.random() * Math.PI;
@@ -50,7 +75,7 @@ const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false }) => {
       });
     }
     return temp;
-  }, []);
+  }, [photos]);
 
   useFrame((state, delta) => {
     if (meshRef.current) {

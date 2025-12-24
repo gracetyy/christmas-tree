@@ -16,10 +16,6 @@ export const useTreeInteraction = ({ photos, interactionMode, isInstaModalOpen, 
     const panOffset = useRef({ x: 0, y: 0 });
 
     const handlePhotoClick = useCallback((photo: PhotoData) => {
-        if (interactionMode === InteractionMode.EDIT) {
-            return; // handled elsewhere
-        }
-
         // View Mode: Zoom In to Photo
         setFocusedPhoto(photo);
         setZoomLevel(ZoomLevel.ZOOMED_IN);
@@ -29,7 +25,7 @@ export const useTreeInteraction = ({ photos, interactionMode, isInstaModalOpen, 
             x: photo.rotation[1],
             y: photo.position[1] - CAMERA_CONFIG.ZOOM_IN_POS.y
         };
-    }, [interactionMode]);
+    }, []);
 
     const handleNextPhoto = useCallback(() => {
         if (!focusedPhoto || photos.length === 0) return;

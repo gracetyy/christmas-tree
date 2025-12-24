@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { COLORS, SPIRAL_CONFIG, TREE_CONFIG } from '../constants';
 import { getSpiralPoint } from '../utils/math';
+import { PhotoData } from '../types';
 
 // Generate a soft glow texture for the fluff particles
 const getFluffTexture = () => {
@@ -25,9 +26,10 @@ const getFluffTexture = () => {
 
 interface SpiralDecorProps {
   isExploded?: boolean;
+  photos?: PhotoData[];
 }
 
-const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false }) => {
+const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = [] }) => {
   const lineRef = useRef<THREE.Mesh>(null);
   const pointsRef = useRef<THREE.Points>(null);
   const explodeProgress = useRef(0);
@@ -99,22 +101,62 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false }) => {
   // Generate decorative balls
   const baubles = useMemo(() => {
     const items = [];
-    const count = 80; // Reduced count to avoid overlaps
+    const count = 100; // Increased count for fuller bottom
+    const photoCenters = photos.map(p => new THREE.Vector3(p.position[0], p.position[1] - 1.25, p.position[2]));
     
     for (let i = 0; i < count; i++) {
-      const rawRandom = Math.random();
-      const h = Math.pow(rawRandom, 2.0); // Bias towards bottom
-      
-      const y = (h * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
-      const maxRadius = TREE_CONFIG.RADIUS_BOTTOM * (1 - h);
-      
-      // Place slightly deeper inside the tree volume to avoid overlapping with Polaroids
-      // Polaroids are floating outside. By keeping these at 80-95% radius, they stay "in" the branches.
-      const r = maxRadius * (0.8 + Math.random() * 0.15); 
-      
-      const theta = Math.random() * Math.PI * 2;
-      const x = r * Math.cos(theta);
-      const z = r * Math.sin(theta);
+      let x = 0, y = 0, z = 0;
+      let attempts = 0;
+      let collides = true;
+      const BAUBLE_COLLISION_RADIUS = 0.4;
+
+      while (collides && attempts < 20) {
+        const rawRandom = Math.random();
+        // Bias more towards bottom (higher power) and cap height to avoid star position
+        const h = Math.pow(rawRandom, 2.2) * 0.85; 
+        
+        y = (h * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
+        const maxRadius = TREE_CONFIG.RADIUS_BOTTOM * (1 - h);
+        
+        // Place slightly deeper inside the tree volume to avoid overlapping with Polaroids
+        // Polaroids are floating outside. By keeping these at 80-95% radius, they stay "in" the branches.
+        const r = maxRadius * (0.8 + Math.random() * 0.15); 
+        
+        const theta = Math.random() * Math.PI * 2;
+        x = r * Math.cos(theta);
+        z = r * Math.sin(theta);
+
+        collides = false;
+        
+        // Check collision with photos
+        for (const center of photoCenters) {
+          const dx = x - center.x;
+          const dy = y - center.y;
+          const dz = z - center.z;
+          const distSq = dx*dx + dy*dy + dz*dz;
+          if (distSq < TREE_CONFIG.COLLISION_RADIUS ** 2) {
+            collides = true;
+            break;
+          }
+        }
+
+        if (collides) { attempts++; continue; }
+
+        // Check collision with other baubles
+        for (const item of items) {
+          const dx = x - item.position.x;
+          const dy = y - item.position.y;
+          const dz = z - item.position.z;
+          const distSq = dx*dx + dy*dy + dz*dz;
+          if (distSq < BAUBLE_COLLISION_RADIUS ** 2) {
+            collides = true;
+            break;
+          }
+        }
+        attempts++;
+      }
+
+      if (collides) continue;
       
       const isRed = Math.random() > 0.5;
       const scale = Math.random() * 0.15 + 0.15; 
@@ -127,7 +169,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false }) => {
       });
     }
     return items;
-  }, []);
+  }, [photos]);
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;

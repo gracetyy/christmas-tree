@@ -27,6 +27,8 @@ interface SceneProps {
   userName?: string;
 }
 
+const TREE_OFFSET_Y = -2;
+
 const CameraController: React.FC<{
   zoomLevel: ZoomLevel;
   controlMode: ControlMode;
@@ -187,6 +189,7 @@ const CameraController: React.FC<{
         if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
           // ZOOM IN TO PHOTO
           const photoPos = new THREE.Vector3(...focusedPhoto.position);
+          photoPos.y += TREE_OFFSET_Y; // Adjust for group offset
 
           // Move target to the photo
           orbitControls.target.lerp(photoPos, lerpSpeed);
@@ -348,9 +351,9 @@ const Scene: React.FC<SceneProps> = ({
       )}
 
       {/* 3D Scene Elements */}
-      <group position={[0, -2, 0]}>
-        <TreeMesh isExploded={isExploded} />
-        <SpiralDecor isExploded={isExploded} />
+      <group position={[0, TREE_OFFSET_Y, 0]}>
+        <TreeMesh isExploded={isExploded} photos={photos} />
+        <SpiralDecor isExploded={isExploded} photos={photos} />
         <Star isExploded={isExploded} />
         <Presents isExploded={isExploded} />
 

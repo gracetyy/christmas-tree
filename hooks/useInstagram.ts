@@ -5,9 +5,10 @@ import { INSTAGRAM_WEBHOOK_URL } from '../constants';
 interface UseInstagramProps {
     photos: PhotoData[];
     setPhotos: React.Dispatch<React.SetStateAction<PhotoData[]>>;
+    onComplete?: (lastPhoto: PhotoData) => void;
 }
 
-export const useInstagram = ({ photos, setPhotos }: UseInstagramProps) => {
+export const useInstagram = ({ photos, setPhotos, onComplete }: UseInstagramProps) => {
     const [isInstaModalOpen, setIsInstaModalOpen] = useState(false);
     const [instaLoading, setInstaLoading] = useState(false);
     const [instaStatus, setInstaStatus] = useState('');
@@ -66,12 +67,21 @@ export const useInstagram = ({ photos, setPhotos }: UseInstagramProps) => {
 
             // 2. Update Photos - Fill all available slots by looping through received images
             const newPhotos = [...photos];
+            let lastUpdatedPhoto: PhotoData | null = null;
+            
             for (let i = 0; i < newPhotos.length; i++) {
                 // Loop through the received images to fill all slots
-                newPhotos[i].url = newImageUrls[i % newImageUrls.length];
+                const url = newImageUrls[i % newImageUrls.length];
+                newPhotos[i] = { ...newPhotos[i], url };
+                lastUpdatedPhoto = newPhotos[i];
             }
+            
             setPhotos(newPhotos);
             setIsInstaModalOpen(false);
+            
+            if (lastUpdatedPhoto && onComplete) {
+                onComplete(lastUpdatedPhoto);
+            }
 
         } catch (error: any) {
             console.error(error);

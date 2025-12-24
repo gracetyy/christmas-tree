@@ -49,7 +49,14 @@ const App: React.FC = () => {
     instaLoading,
     instaStatus,
     handleInstagramSubmit
-  } = useInstagram({ photos, setPhotos });
+  } = useInstagram({ 
+    photos, 
+    setPhotos,
+    onComplete: (lastPhoto) => {
+      setInteractionMode(InteractionMode.VIEW);
+      handlePhotoClick(lastPhoto);
+    }
+  });
 
   const {
     zoomLevel,
@@ -110,7 +117,15 @@ const App: React.FC = () => {
 
   const handleSingleUpload = (id: string, file: File) => {
     const url = URL.createObjectURL(file);
-    setPhotos(prev => prev.map(p => p.id === id ? { ...p, url } : p));
+    const photoToUpdate = photos.find(p => p.id === id);
+    if (photoToUpdate) {
+      const updatedPhoto = { ...photoToUpdate, url };
+      setPhotos(prev => prev.map(p => p.id === id ? updatedPhoto : p));
+      
+      // Switch to VIEW mode and focus
+      setInteractionMode(InteractionMode.VIEW);
+      handlePhotoClick(updatedPhoto);
+    }
   };
 
   const handleBulkUpload = (files: FileList) => {
@@ -118,14 +133,33 @@ const App: React.FC = () => {
 
     // Distribute uploaded files into existing slots
     const newPhotos = [...photos];
-    let fileIndex = 0;
+    
+    // Sort indices by Y descending to fill from top to bottom
+    const sortedIndices = newPhotos
+      .map((p, i) => ({ y: p.position[1], index: i }))
+      .sort((a, b) => b.y - a.y)
+      .map(item => item.index);
 
-    for (let i = 0; i < newPhotos.length && fileIndex < newFiles.length; i++) {
-      // Find empty or filled, overwrite from start
-      newPhotos[i].url = URL.createObjectURL(newFiles[fileIndex]);
+    let fileIndex = 0;
+    let lastAddedPhoto: PhotoData | null = null;
+
+    for (const index of sortedIndices) {
+      if (fileIndex >= newFiles.length) break;
+      
+      const url = URL.createObjectURL(newFiles[fileIndex]);
+      newPhotos[index] = { ...newPhotos[index], url };
+      
+      lastAddedPhoto = newPhotos[index];
       fileIndex++;
     }
+    
     setPhotos(newPhotos);
+    
+    if (lastAddedPhoto) {
+      // Switch to VIEW mode and focus
+      setInteractionMode(InteractionMode.VIEW);
+      handlePhotoClick(lastAddedPhoto);
+    }
   };
 
   const handleDeletePhoto = (id: string) => {

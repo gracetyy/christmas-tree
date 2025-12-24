@@ -23,6 +23,7 @@ export const TREE_CONFIG = {
   RADIUS_BOTTOM: 6,
   PARTICLE_COUNT: 10000, // Slightly reduced for performance while keeping density
   PARTICLE_SIZE: 0.25,
+  COLLISION_RADIUS: 0.5, // Radius to prevent overlap with photos
 };
 
 export const SPIRAL_CONFIG = {
