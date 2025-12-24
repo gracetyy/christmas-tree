@@ -27,11 +27,12 @@ export const useRecording = (photos: PhotoData[], onError?: (message: string) =>
             }
 
             // Determine the best supported MIME type
+            // VP8 is generally the most stable for Windows Chrome canvas recording.
             const formats = [
+                'video/webm;codecs=vp8',
                 'video/mp4;codecs=h264',
                 'video/mp4',
                 'video/webm;codecs=vp9',
-                'video/webm;codecs=vp8',
                 'video/webm'
             ];
 
@@ -40,19 +41,17 @@ export const useRecording = (photos: PhotoData[], onError?: (message: string) =>
 
             console.log(`Starting recording with MIME type: ${supportedMimeType}`);
 
-            const stream = canvas.captureStream(30);
+            // Use default captureStream() without fixed frame rate to avoid driver issues on Windows
+            const stream = canvas.captureStream();
             let mediaRecorder: MediaRecorder;
             try {
                 mediaRecorder = new MediaRecorder(stream, {
                     mimeType: supportedMimeType,
-                    videoBitsPerSecond: 5000000 // 5Mbps
+                    videoBitsPerSecond: 4000000 // 4Mbps is a safe middle ground
                 });
             } catch (err) {
-                console.error('MediaRecorder init failed, falling back to webm:', err);
-                mediaRecorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm',
-                    videoBitsPerSecond: 5000000
-                });
+                console.error('MediaRecorder init failed, falling back to default:', err);
+                mediaRecorder = new MediaRecorder(stream);
             }
 
             const chunks: Blob[] = [];

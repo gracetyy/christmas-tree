@@ -13,8 +13,8 @@ const GlowTexture = () => {
   if (ctx) {
     const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
     gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
-    gradient.addColorStop(0.2, 'rgba(255, 220, 100, 0.5)');
-    gradient.addColorStop(0.5, 'rgba(255, 200, 0, 0.1)');
+    gradient.addColorStop(0.4, 'rgba(255, 220, 100, 0.3)');
+    gradient.addColorStop(0.7, 'rgba(255, 200, 0, 0.05)');
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 128, 128);
@@ -112,9 +112,9 @@ const Star: React.FC<StarProps> = ({ isExploded = false }) => {
 
       {/* GLOW HALO */}
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
-        <mesh scale={[12, 12, 1]}>
+        <mesh scale={[16, 16, 1]}>
           <planeGeometry />
-          <meshBasicMaterial map={glowTexture} transparent opacity={0.6} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial map={glowTexture} transparent opacity={0.3} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
         </mesh>
       </Billboard>
 
@@ -138,7 +138,7 @@ const Star: React.FC<StarProps> = ({ isExploded = false }) => {
         <meshStandardMaterial
           color={COLORS.STAR}
           emissive={COLORS.STAR_GLOW}
-          emissiveIntensity={1.5}
+          emissiveIntensity={1.0}
           metalness={0.9}
           roughness={0.1}
         />
@@ -163,7 +163,7 @@ const Star: React.FC<StarProps> = ({ isExploded = false }) => {
       )}
 
       {/* Extra Sparkles for magical feel */}
-      <Sparkles count={15} scale={4} size={6} speed={0.4} opacity={0.7} color="#fff" />
+      <Sparkles count={20} scale={4} size={3} speed={0.4} opacity={0.8} color="#fff" material-toneMapped={false} />
 
       {/* Light Source inside the star - No shadows for performance */}
       <pointLight
