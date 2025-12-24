@@ -21,8 +21,8 @@ export const COLORS = {
 export const TREE_CONFIG = {
   HEIGHT: 14, // Slightly taller for elegance
   RADIUS_BOTTOM: 6,
-  PARTICLE_COUNT: 10000, // Slightly reduced for performance while keeping density
-  PARTICLE_SIZE: 0.25,
+  PARTICLE_COUNT: 20000, // Significantly increased for maximum density
+  PARTICLE_SIZE: 0.3, // Increased size for more prominent shapes
   COLLISION_RADIUS: 0.5, // Radius to prevent overlap with photos
 };
 

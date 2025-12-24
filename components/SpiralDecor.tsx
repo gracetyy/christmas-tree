@@ -126,9 +126,8 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
         y = (h * TREE_CONFIG.HEIGHT) - (TREE_CONFIG.HEIGHT / 2);
         const maxRadius = TREE_CONFIG.RADIUS_BOTTOM * (1 - h);
         
-        // Place slightly deeper inside the tree volume to avoid overlapping with Polaroids
-        // Polaroids are floating outside. By keeping these at 80-95% radius, they stay "in" the branches.
-        const r = maxRadius * (0.8 + Math.random() * 0.15); 
+        // Place outside the tree mesh to ensure they are visible and don't clip with branches
+        const r = maxRadius * (1.05 + Math.random() * 0.1); 
         
         const theta = Math.random() * Math.PI * 2;
         x = r * Math.cos(theta);
