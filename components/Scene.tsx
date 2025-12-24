@@ -126,7 +126,7 @@ const CameraController: React.FC<{
       const time = (performance.now() - recordingStartTime.current) / 1000;
 
       if (recordingType === 'FULL') {
-        // Full Tree Rotation - Faster (360 degrees in 3s)
+        // Full Tree Rotation - Faster (360 degrees in 8s)
         const angle = time * (Math.PI * 2 / 8); 
         const radius = 32; 
         camera.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
