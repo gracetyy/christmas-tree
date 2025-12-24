@@ -95,7 +95,7 @@ export const useRecording = (photos: PhotoData[], onError?: (message: string) =>
             };
 
             // Duration logic
-            const duration = type === 'FULL' ? 10000 : Math.max(photos.length * 2500, 5000); // 10s for full, 2.5s per photo (min 5s)
+            const duration = type === 'FULL' ? 8000 : Math.max(photos.length * 1000, 2000); // 8s for full, 1s per photo (min 5s)
 
             mediaRecorder.start();
             setTimeout(() => {
