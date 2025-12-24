@@ -35,31 +35,34 @@ const InstagramModal: React.FC<InstagramModalProps> = ({ isOpen, onClose, onSubm
           <X size={24} />
         </button>
 
-        <div className="p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 md:p-3 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] rounded-xl shadow-lg">
-                <Instagram className="text-white w-5 h-5 md:w-6 md:h-6" />
+        <div className="p-5 md:p-8">
+          <div className="flex items-center gap-3 mb-4 md:mb-6">
+            <div className="p-2 md:p-3 bg-gradient-to-br from-[#833ab4] via-[#fd1d1d] to-[#fcb045] rounded-xl shadow-lg">
+                <Instagram className="text-white w-4 h-4 md:w-6 md:h-6" />
             </div>
             <div>
-                <h2 className="text-xl md:text-2xl font-light text-white">Import Memories</h2>
-                <p className="text-white/40 text-xs md:text-sm">Create a festive tree from Instagram</p>
+                <h2 className="text-lg md:text-2xl font-light text-white">Import Memories</h2>
+                <p className="text-white/40 text-[10px] md:text-sm">
+                    <span className="md:hidden">Create a festive tree from Import</span>
+                    <span className="hidden md:inline">Create a festive tree from Instagram</span>
+                </p>
             </div>
           </div>
 
           {!isLoading ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-[#fff1a1] uppercase tracking-wider">
+            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+              <div className="space-y-1.5 md:space-y-2">
+                <label className="text-[10px] md:text-sm font-medium text-[#fff1a1] uppercase tracking-wider">
                   Instagram Username
                 </label>
                 <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">@</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-base md:text-lg">@</span>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value.replace('@', ''))}
                       placeholder="zuck"
-                      className="w-full bg-white/5 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white placeholder-white/20 focus:outline-none focus:border-[#1cbd62] focus:ring-1 focus:ring-[#1cbd62] transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 md:py-3 pl-10 pr-4 text-sm md:text-base text-white placeholder-white/20 focus:outline-none focus:border-[#1cbd62] focus:ring-1 focus:ring-[#1cbd62] transition-all"
                       autoFocus
                     />
                 </div>
@@ -68,9 +71,10 @@ const InstagramModal: React.FC<InstagramModalProps> = ({ isOpen, onClose, onSubm
               <button
                 type="submit"
                 disabled={!username}
-                className="w-full bg-[#1cbd62] hover:bg-[#1faa6a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(28,189,98,0.3)] hover:shadow-[0_0_30px_rgba(28,189,98,0.5)] active:scale-[0.98]"
+                className="w-full bg-[#1cbd62] hover:bg-[#1faa6a] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 md:py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(28,189,98,0.3)] hover:shadow-[0_0_30px_rgba(28,189,98,0.5)] active:scale-[0.98] text-sm md:text-base"
               >
-                Generate Christmas Tree
+                <span className="md:hidden">Generate Tree</span>
+                <span className="hidden md:inline">Generate Christmas Tree</span>
               </button>
             </form>
           ) : (

@@ -109,12 +109,12 @@ const Overlay: React.FC<OverlayProps> = ({
   // if (isRecording) return null; // Removed to keep title visible
 
   return (
-    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-6">
+    <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-4 md:p-6">
 
       {/* Top Header - Just the Title */}
-      <div className="flex flex-col justify-center items-center w-full relative pt-4 md:pt-8 px-4">
+      <div className="flex flex-col justify-center items-center w-full relative pt-2 md:pt-8 px-4">
         <div className="pointer-events-auto text-center">
-          <h1 className="text-4xl md:text-6xl text-[#fff1a1] leading-tight" style={{ fontFamily: "'Great Vibes', cursive", textShadow: '0 0 20px rgba(255, 241, 161, 0.5)' }}>
+          <h1 className="text-3xl md:text-6xl text-[#fff1a1] leading-tight" style={{ fontFamily: "'Great Vibes', cursive", textShadow: '0 0 20px rgba(255, 241, 161, 0.5)' }}>
             Merry Christmas{userName ? ` ${userName}` : ''}!
           </h1>
         </div>
@@ -149,54 +149,60 @@ const Overlay: React.FC<OverlayProps> = ({
       {/* Instructions Pane - Responsive positioning */}
       <div className="absolute top-1/4 right-4 md:top-1/2 md:right-8 transform md:-translate-y-1/2 pointer-events-none transition-all duration-500 z-20">
         {!isRecording && showUI && controlMode === ControlMode.HAND && (
-          <div className="bg-white/5 backdrop-blur-3xl p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-white/10 text-white/90 w-48 md:w-64 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col gap-3 md:gap-4 animate-in fade-in slide-in-from-right-4 duration-700">
-            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-              <div className="p-2 bg-[#1cbd62]/20 rounded-full">
-                <Hand size={20} className="text-[#1cbd62]" />
+          <div className="bg-white/5 backdrop-blur-3xl p-3 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/10 text-white/90 w-40 md:w-64 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col gap-2 md:gap-4 animate-in fade-in slide-in-from-right-4 duration-700">
+            <div className="flex items-center gap-2 md:gap-3 border-b border-white/10 pb-2 md:pb-3">
+              <div className="p-1.5 md:p-2 bg-[#1cbd62]/20 rounded-full">
+                <Hand className="w-4 h-4 md:w-5 md:h-5 text-[#1cbd62]" />
               </div>
-              <h3 className="font-semibold tracking-wide uppercase text-xs">Hand Controls</h3>
+              <h3 className="font-semibold tracking-wide uppercase text-[10px] md:text-xs">Hand Controls</h3>
             </div>
 
-            <ul className="space-y-4">
+            <ul className="space-y-3 md:space-y-4">
               {zoomLevel === ZoomLevel.FULL_TREE ? (
                 <>
-                  <li className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Move size={18} className="text-white/70" />
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
-                      <span className="text-sm font-medium">Rotate Tree</span>
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
+                      <span className="text-xs md:text-sm font-medium">
+                        <span className="md:hidden">Rotate</span>
+                        <span className="hidden md:inline">Rotate Tree</span>
+                      </span>
                     </div>
                   </li>
-                  <li className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Hand size={18} className="text-white/70" />
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Hand className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
-                      <span className="text-sm font-medium">Zoom In</span>
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
+                      <span className="text-xs md:text-sm font-medium">Zoom In</span>
                     </div>
                   </li>
                 </>
               ) : (
                 <>
-                  <li className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Move size={18} className="text-white/70" />
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Swipe Hand</span>
-                      <span className="text-sm font-medium">Next / Prev</span>
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Swipe Hand</span>
+                      <span className="text-xs md:text-sm font-medium">
+                        <span className="md:hidden">Next/Prev</span>
+                        <span className="hidden md:inline">Next / Prev</span>
+                      </span>
                     </div>
                   </li>
-                  <li className="flex items-center gap-4 group">
-                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <div className="w-4 h-4 rounded-md border-2 border-white/70" />
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
-                      <span className="text-sm font-medium">Zoom Out</span>
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
+                      <span className="text-xs md:text-sm font-medium">Zoom Out</span>
                     </div>
                   </li>
                 </>
@@ -204,8 +210,9 @@ const Overlay: React.FC<OverlayProps> = ({
             </ul>
 
             {!isHandReady && (
-              <div className="mt-2 py-2 px-4 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 text-[9px] text-center font-bold animate-pulse uppercase tracking-widest">
-                Waiting for camera...
+              <div className="mt-1 md:mt-2 py-1.5 md:py-2 px-3 md:px-4 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[8px] md:text-[9px] text-center font-bold animate-pulse uppercase tracking-widest">
+                <span className="md:hidden">Waiting...</span>
+                <span className="hidden md:inline">Waiting for camera...</span>
               </div>
             )}
           </div>
@@ -226,17 +233,17 @@ const Overlay: React.FC<OverlayProps> = ({
             </button>
           ) : (
             /* Main Control Panel */
-            <div className="flex flex-col items-center gap-3 w-full max-w-full">
+            <div className="flex flex-col items-center gap-2 md:gap-3 w-full max-w-full">
 
               {/* Top Row: System & View Settings - Flexible layout */}
-              <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-1 md:gap-2">
+              <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-0.5 md:gap-2">
                 {/* Music Control */}
                 <button
                   onClick={toggleMusic}
-                  className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                  className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
                   title={isMusicPlaying ? "Pause Music" : "Play Music"}
                 >
-                  {isMusicPlaying ? <Music size={16} /> : <VolumeX size={16} />}
+                  {isMusicPlaying ? <Music className="w-3.5 h-3.5 md:w-4 md:h-4" /> : <VolumeX className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                 </button>
 
                 <div className="hidden md:block w-px h-4 bg-white/10 mx-1"></div>
@@ -245,19 +252,19 @@ const Overlay: React.FC<OverlayProps> = ({
                 <div className="flex bg-white/5 rounded-full p-0.5 scale-90 md:scale-100">
                   <button
                     onClick={() => setControlMode(ControlMode.MOUSE)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 rounded-full transition-all ${controlMode === ControlMode.MOUSE ? 'bg-white text-black shadow-lg' : 'text-white hover:bg-white/10'
+                    className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-1 md:py-1.5 rounded-full transition-all ${controlMode === ControlMode.MOUSE ? 'bg-white text-black shadow-lg' : 'text-white hover:bg-white/10'
                       }`}
                   >
-                    <Mouse size={14} />
-                    <span className="text-[10px] md:text-xs font-medium">Mouse</span>
+                    <Mouse className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <span className="text-[9px] md:text-xs font-medium">Mouse</span>
                   </button>
                   <button
                     onClick={() => setControlMode(ControlMode.HAND)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 rounded-full transition-all ${controlMode === ControlMode.HAND ? 'bg-[#1cbd62] text-white shadow-lg' : 'text-white hover:bg-white/10'
+                    className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-1 md:py-1.5 rounded-full transition-all ${controlMode === ControlMode.HAND ? 'bg-[#1cbd62] text-white shadow-lg' : 'text-white hover:bg-white/10'
                       }`}
                   >
-                    <Hand size={14} />
-                    <span className="text-[10px] md:text-xs font-medium">Hand</span>
+                    <Hand className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <span className="text-[9px] md:text-xs font-medium">Hand</span>
                   </button>
                 </div>
 
@@ -267,19 +274,19 @@ const Overlay: React.FC<OverlayProps> = ({
                 <div className="flex bg-white/5 rounded-full p-0.5 scale-90 md:scale-100">
                   <button
                     onClick={() => setInteractionMode(InteractionMode.VIEW)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 rounded-full transition-all ${interactionMode === InteractionMode.VIEW ? 'bg-[#f2e24e] text-black shadow-lg' : 'text-white hover:bg-white/10'
+                    className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-1 md:py-1.5 rounded-full transition-all ${interactionMode === InteractionMode.VIEW ? 'bg-[#f2e24e] text-black shadow-lg' : 'text-white hover:bg-white/10'
                       }`}
                   >
-                    <Eye size={14} />
-                    <span className="text-[10px] md:text-xs font-medium">View</span>
+                    <Eye className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <span className="text-[9px] md:text-xs font-medium">View</span>
                   </button>
                   <button
                     onClick={() => setInteractionMode(InteractionMode.EDIT)}
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 rounded-full transition-all ${interactionMode === InteractionMode.EDIT ? 'bg-[#ff421c] text-white shadow-lg' : 'text-white hover:bg-white/10'
+                    className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-4 py-1 md:py-1.5 rounded-full transition-all ${interactionMode === InteractionMode.EDIT ? 'bg-[#ff421c] text-white shadow-lg' : 'text-white hover:bg-white/10'
                       }`}
                   >
-                    <Edit3 size={14} />
-                    <span className="text-[10px] md:text-xs font-medium">Edit</span>
+                    <Edit3 className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                    <span className="text-[9px] md:text-xs font-medium">Edit</span>
                   </button>
                 </div>
 
@@ -289,47 +296,50 @@ const Overlay: React.FC<OverlayProps> = ({
                 <div className="flex gap-0.5 md:gap-1">
                   <button
                     onClick={toggleFullscreen}
-                    className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
                     title="Toggle Fullscreen"
                   >
-                    <Maximize size={16} />
+                    <Maximize className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </button>
                   <button
                     onClick={() => setShowUI(false)}
-                    className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                    className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
                     title="Hide Buttons"
                   >
-                    <EyeOff size={16} />
+                    <EyeOff className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </button>
                 </div>
               </div>
 
               {/* Bottom Row: Content Actions - Wrapping for mobile */}
-              <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-1 w-full max-w-fit">
+              <div className="flex flex-wrap justify-center bg-white/10 backdrop-blur-md rounded-2xl md:rounded-full p-1 border border-white/20 shadow-2xl items-center gap-0.5 md:gap-1 w-full max-w-fit">
 
                 {zoomLevel === ZoomLevel.ZOOMED_IN && (
-                  <div className="flex items-center gap-1 border-r border-white/10 pr-1 mr-1">
+                  <div className="flex items-center gap-0.5 md:gap-1 border-r border-white/10 pr-1 mr-1">
                     <button
                       onClick={onPrev}
-                      className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                      className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
                       title="Previous Photo"
                     >
-                      <ChevronLeft size={18} />
+                      <ChevronLeft className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     </button>
 
                     <button
                       onClick={() => setZoomLevel(ZoomLevel.FULL_TREE)}
-                      className="flex items-center px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10 whitespace-nowrap"
+                      className="flex items-center px-2 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white hover:bg-white/10 whitespace-nowrap"
                     >
-                      <span className="text-[10px] md:text-sm font-medium text-[#fff1a1]">Back to Tree</span>
+                      <span className="text-[9px] md:text-sm font-medium text-[#fff1a1]">
+                        <span className="md:hidden">Back</span>
+                        <span className="hidden md:inline">Back to Tree</span>
+                      </span>
                     </button>
 
                     <button
                       onClick={onNext}
-                      className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
+                      className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full text-white hover:bg-white/10 transition-all"
                       title="Next Photo"
                     >
-                      <ChevronRight size={18} />
+                      <ChevronRight className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     </button>
                   </div>
                 )}
@@ -337,50 +347,56 @@ const Overlay: React.FC<OverlayProps> = ({
                 {/* Local Upload */}
                 <button
                   onClick={triggerBulkUpload}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
+                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white hover:bg-white/10"
                 >
-                  <ImagePlus size={16} className="text-[#f2e24e]" />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Add Photos</span>
+                  <ImagePlus className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#f2e24e]" />
+                  <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
+                    <span className="md:hidden">Add</span>
+                    <span className="hidden md:inline">Add Photos</span>
+                  </span>
                 </button>
 
-                <div className="w-px h-6 bg-white/10 mx-0.5"></div>
+                <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
                 {/* Instagram Import */}
                 <button
                   onClick={onOpenInstagram}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
+                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white hover:bg-white/10"
                 >
-                  <Instagram size={16} className="text-[#fd1d1d]" />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Import from Instagram</span>
+                  <Instagram className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#fd1d1d]" />
+                  <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
+                    <span className="md:hidden">Instagram</span>
+                    <span className="hidden md:inline">Import from Instagram</span>
+                  </span>
                 </button>
 
-                <div className="w-px h-6 bg-white/10 mx-0.5"></div>
+                <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
                 {/* Video Download Dropdown */}
                 <div className="relative group">
                   <button
-                    className={`flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white bg-white/5 hover:bg-white/10 ${isRecording ? 'animate-pulse bg-red-500/20' : ''}`}
+                    className={`flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white bg-white/5 hover:bg-white/10 ${isRecording ? 'animate-pulse bg-red-500/20' : ''}`}
                     title="Download Video"
                   >
-                    <Video size={16} className={`${isRecording ? 'text-red-500' : 'text-[#3b82f6]'}`} />
-                    <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">
+                    <Video className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isRecording ? 'text-red-500' : 'text-[#3b82f6]'}`} />
+                    <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
                       {isRecording ? 'Rec...' : 'Video'}
                     </span>
                   </button>
 
                   {/* Dropdown Menu */}
                   {!isRecording && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-44 md:w-56 bg-black/95 backdrop-blur-2xl border border-white/20 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 md:w-56 bg-black/95 backdrop-blur-2xl border border-white/20 rounded-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-[100] shadow-[0_10px_40px_rgba(0,0,0,0.8)]">
                       <button
                         onClick={() => onRecordVideo('FULL')}
-                        className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors border-b border-white/10 flex items-center gap-3"
+                        className="w-full text-left px-4 md:px-5 py-3 md:py-4 text-[10px] md:text-sm font-semibold text-white hover:bg-white/20 transition-colors border-b border-white/10 flex items-center gap-2 md:gap-3"
                       >
-                        <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                         360° Rotation
                       </button>
                       <button
                         onClick={() => onRecordVideo('ALBUM')}
-                        className="w-full text-left px-5 py-4 text-xs md:text-sm font-semibold text-white hover:bg-white/20 transition-colors flex items-center gap-3"
+                        className="w-full text-left px-4 md:px-5 py-3 md:py-4 text-[10px] md:text-sm font-semibold text-white hover:bg-white/20 transition-colors flex items-center gap-2 md:gap-3"
                       >
                         <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
                         Cinematic Tour
@@ -389,28 +405,31 @@ const Overlay: React.FC<OverlayProps> = ({
                   )}
                 </div>
 
-                <div className="w-px h-6 bg-white/10 mx-0.5"></div>
+                <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
                 {/* Download Button */}
                 <button
                   onClick={handleDownload}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full transition-all text-white hover:bg-white/10"
+                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full transition-all text-white hover:bg-white/10"
                   title="Download Tree Screenshot"
                 >
-                  <Download size={16} className="text-[#1cbd62]" />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Image</span>
+                  <Download className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#1cbd62]" />
+                  <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">Image</span>
                 </button>
 
-                <div className="w-px h-6 bg-white/10 mx-0.5"></div>
+                <div className="w-px h-4 md:h-6 bg-white/10 mx-0.5"></div>
 
                 {/* GitHub Star Button */}
                 <button
                   onClick={() => window.open('https://github.com/gracetyy/christmas-tree', '_blank')}
-                  className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
+                  className="flex items-center gap-1 md:gap-2 px-2.5 md:px-5 py-1.5 md:py-2 rounded-full text-[#f2e24e] hover:bg-white/10 transition-all"
                   title="Star our repo!"
                 >
-                  <Github size={16} />
-                  <span className="text-[10px] md:text-sm font-medium whitespace-nowrap text-white/90">Please star our repo! &lt;3</span>
+                  <Github className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  <span className="text-[9px] md:text-sm font-medium whitespace-nowrap text-white/90">
+                    <span className="md:hidden">Star</span>
+                    <span className="hidden md:inline">Please star our repo! &lt;3</span>
+                  </span>
                 </button>
 
                 <input

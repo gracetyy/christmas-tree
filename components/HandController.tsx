@@ -275,7 +275,7 @@ const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExpl
     <>
         {/* Hidden Video Element for processing */}
         {mode === ControlMode.HAND && (
-            <div className="fixed bottom-4 right-4 w-32 h-24 border border-green-500 rounded overflow-hidden z-50 opacity-80 bg-black">
+            <div className="fixed bottom-2 right-2 md:bottom-4 md:right-4 w-24 h-18 md:w-32 md:h-24 border border-green-500/30 md:border-green-500 rounded-lg md:rounded overflow-hidden z-50 opacity-80 bg-black shadow-2xl">
                <video 
                 ref={videoRef} 
                 autoPlay 
@@ -283,7 +283,7 @@ const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExpl
                 muted 
                 className="w-full h-full object-cover transform -scale-x-100" // Mirror effect
                />
-               {loading && <div className="absolute inset-0 flex items-center justify-center text-xs text-green-500">Init AI...</div>}
+               {loading && <div className="absolute inset-0 flex items-center justify-center text-[10px] md:text-xs text-green-500">Init AI...</div>}
             </div>
         )}
     </>
