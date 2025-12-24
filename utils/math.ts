@@ -53,10 +53,22 @@ export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', 
     const ctx = canvas.getContext('2d');
     if (!ctx) return '';
 
+
+
+    // Festive Background Colors (Dark Red / Dark Green)
+
+    let colorStart = '#083f1eff'; // Green-900
+    let colorEnd = '#01170aff';   // Green-950
+
+    if (type === 'bell') {
+        // Dark Green for Bell
+        colorStart = '#320707ff'; // Red-950
+        colorEnd = '#250404';   // Near Black Red
+    } 
     // 1. Festive Background with Radial Gradient
     const gradient = ctx.createRadialGradient(256, 256, 50, 256, 256, 400);
-    gradient.addColorStop(0, '#1e293b'); // Slate-800
-    gradient.addColorStop(1, '#0f172a'); // Slate-900
+    gradient.addColorStop(0, colorStart);
+    gradient.addColorStop(1, colorEnd);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 512, 512);
 
