@@ -1,46 +1,51 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Scene from './components/Scene';
 import Overlay from './components/Overlay';
 import HandController from './components/HandController';
 import InstagramModal from './components/InstagramModal';
 import { generatePhotoPositions } from './utils/math';
-import { loadGoogleApi, handleGoogleLogin, openDrivePicker, listImagesInFolder } from './utils/googleDrive';
 import { ControlMode, ZoomLevel, PhotoData, InteractionMode } from './types';
-import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES, GOOGLE_CONFIG, INSTAGRAM_WEBHOOK_URL, CAMERA_CONFIG } from './constants';
+import { DEFAULT_PHOTOS_COUNT, PLACEHOLDER_TYPES } from './constants';
+import { useAudio } from './hooks/useAudio';
+import { useInstagram } from './hooks/useInstagram';
+import { useRecording } from './hooks/useRecording';
+import { useTreeInteraction } from './hooks/useTreeInteraction';
 
 const App: React.FC = () => {
+  // --- Local State ---
   const [controlMode, setControlMode] = useState<ControlMode>(ControlMode.MOUSE);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>(InteractionMode.VIEW);
-  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(ZoomLevel.FULL_TREE);
   const [photos, setPhotos] = useState<PhotoData[]>([]);
-  const [focusedPhoto, setFocusedPhoto] = useState<PhotoData | null>(null);
   const [userName, setUserName] = useState('');
   const [isNameSet, setIsNameSet] = useState(false);
-  
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingType, setRecordingType] = useState<'FULL' | 'ALBUM' | null>(null);
-  
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const panOffset = useRef({ x: 0, y: 0 });
-  
   const [isHandReady, setIsHandReady] = useState(false);
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-  const [isGoogleApiReady, setIsGoogleApiReady] = useState(false);
 
-  // Instagram State
-  const [isInstaModalOpen, setIsInstaModalOpen] = useState(false);
-  const [instaLoading, setInstaLoading] = useState(false);
-  const [instaStatus, setInstaStatus] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // --- Custom Hooks ---
+  const { isMusicPlaying, toggleMusic, audioRef } = useAudio();
+
+  const { isRecording, recordingType, handleRecordVideo } = useRecording(photos);
+
+  const {
+    isInstaModalOpen, setIsInstaModalOpen,
+    instaLoading, instaStatus, handleInstagramSubmit
+  } = useInstagram(photos, setPhotos);
+
+  const {
+    zoomLevel, setZoomLevel, focusedPhoto, panOffset,
+    handlePhotoClick, handleNextPhoto, handlePrevPhoto, handleGesture
+  } = useTreeInteraction(photos, interactionMode, isInstaModalOpen, isRecording);
+
+  // --- Initialization ---
 
   // Initialize Photos
   useEffect(() => {
     const positions = generatePhotoPositions(DEFAULT_PHOTOS_COUNT);
     const initialPhotos: PhotoData[] = positions.map((pos, index) => {
-      // Rotate through placeholder types
       const types = Object.values(PLACEHOLDER_TYPES);
       const type = types[index % types.length];
-      
+
       return {
         id: `photo-${index}`,
         url: '', // Empty means use placeholder
@@ -52,60 +57,7 @@ const App: React.FC = () => {
     setPhotos(initialPhotos);
   }, []);
 
-  // Robust Audio Autoplay Logic
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.volume = 0.8;
-    
-    const attemptPlay = async () => {
-      try {
-        await audio.play();
-        console.log("Audio started successfully");
-        setIsMusicPlaying(true);
-        removeListeners();
-      } catch (err) {
-        console.log("Playback blocked, waiting for interaction");
-      }
-    };
-
-    const removeListeners = () => {
-      window.removeEventListener('pointerdown', attemptPlay);
-      window.removeEventListener('keydown', attemptPlay);
-    };
-
-    // Listen for any interaction on the window
-    window.addEventListener('pointerdown', attemptPlay);
-    window.addEventListener('keydown', attemptPlay);
-
-    // Also try immediately (might work if already interacted)
-    attemptPlay();
-
-    return removeListeners;
-  }, []);
-
-  // Clear focused photo when zooming out
-  useEffect(() => {
-    if (zoomLevel === ZoomLevel.FULL_TREE) {
-        setFocusedPhoto(null);
-    }
-  }, [zoomLevel]);
-
-  const toggleMusic = () => {
-    if (!audioRef.current) return;
-    
-    if (!audioRef.current.paused) {
-        audioRef.current.pause();
-        setIsMusicPlaying(false);
-    } else {
-        audioRef.current.play()
-            .then(() => setIsMusicPlaying(true))
-            .catch(err => console.error("Toggle play failed:", err));
-    }
-  };
-
-  // Request Camera permissions when switching to hand mode
+  // Hand Control Permissions
   useEffect(() => {
     if (controlMode === ControlMode.HAND) {
       navigator.mediaDevices.getUserMedia({ video: true })
@@ -121,129 +73,25 @@ const App: React.FC = () => {
           setControlMode(ControlMode.MOUSE);
         });
     } else {
-        // Stop stream if exists
-        if (videoRef.current && videoRef.current.srcObject) {
-            const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-            tracks.forEach(t => t.stop());
-            videoRef.current.srcObject = null;
-            setIsHandReady(false);
-        }
+      if (videoRef.current && videoRef.current.srcObject) {
+        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+        tracks.forEach(t => t.stop());
+        videoRef.current.srcObject = null;
+        setIsHandReady(false);
+      }
     }
   }, [controlMode]);
 
-  // Hand Gesture Handler
-  const handleGesture = useCallback((action: 'ZOOM_IN' | 'ZOOM_OUT' | 'PAN', delta?: {x: number, y: number}) => {
-    if (action === 'ZOOM_IN') {
-        setZoomLevel(ZoomLevel.ZOOMED_IN);
-    } else if (action === 'ZOOM_OUT') {
-        setZoomLevel(ZoomLevel.FULL_TREE);
-    } else if (action === 'PAN' && delta) {
-        // Accumulate pan offset
-        panOffset.current.x += delta.x;
-        panOffset.current.y += delta.y;
-    }
-  }, []);
+  // --- Handlers ---
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     if (isInstaModalOpen) return;
-
-    // Prevent zooming out when interacting with UI
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('input')) {
-        return;
-    }
+    if (target.closest('button') || target.closest('input')) return;
 
     if (zoomLevel === ZoomLevel.ZOOMED_IN) {
-        setZoomLevel(ZoomLevel.FULL_TREE);
+      setZoomLevel(ZoomLevel.FULL_TREE);
     }
-  };
-
-  const handleRecordVideo = (type: 'FULL' | 'ALBUM') => {
-    if (isRecording) return;
-
-    // Set flags first so HUD + overlays render before we capture the stream
-    setIsRecording(true);
-    setRecordingType(type);
-
-    // Defer capture to next frame so HUD (greeting) is present in the canvas
-    requestAnimationFrame(() => {
-      const canvas = document.querySelector('canvas');
-      if (!canvas) {
-        setIsRecording(false);
-        setRecordingType(null);
-        alert('Unable to find canvas to record.');
-        return;
-      }
-
-      // Determine the best supported MIME type
-      const formats = [
-          'video/mp4;codecs=h264',
-          'video/mp4',
-          'video/webm;codecs=vp9',
-          'video/webm;codecs=vp8',
-          'video/webm'
-      ];
-      
-      const supportedMimeType = formats.find(f => MediaRecorder.isTypeSupported(f)) || 'video/webm';
-      const extension = supportedMimeType.includes('mp4') ? 'mp4' : 'webm';
-
-      console.log(`Starting recording with MIME type: ${supportedMimeType}`);
-
-      const stream = canvas.captureStream(30);
-      let mediaRecorder: MediaRecorder;
-      try {
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: supportedMimeType,
-          videoBitsPerSecond: 5000000 // 5Mbps
-        });
-      } catch (err) {
-        console.error('MediaRecorder init failed, falling back to webm:', err);
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: 'video/webm',
-          videoBitsPerSecond: 5000000
-        });
-      }
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-      mediaRecorder.onstop = () => {
-        if (chunks.length === 0) {
-          alert('Recording failed: no data was captured. Please try again.');
-          setIsRecording(false);
-          setRecordingType(null);
-          return;
-        }
-        const finalType = chunks[0].type || supportedMimeType;
-        const finalExt = finalType.includes('mp4') ? 'mp4' : 'webm';
-        const blob = new Blob(chunks, { type: finalType });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `christmas-tree-${type.toLowerCase()}.${finalExt}`;
-        link.click();
-        setIsRecording(false);
-        setRecordingType(null);
-      };
-
-      mediaRecorder.onerror = (e) => {
-        console.error('MediaRecorder error:', e);
-        alert('Recording failed to start. Please try again or use a modern browser.');
-        setIsRecording(false);
-        setRecordingType(null);
-      };
-
-      // Duration logic
-      const duration = type === 'FULL' ? 10000 : Math.max(photos.length * 2500, 5000); // 10s for full, 2.5s per photo (min 5s)
-
-      mediaRecorder.start();
-      setTimeout(() => {
-          mediaRecorder.stop();
-      }, duration);
-    });
   };
 
   const handleSingleUpload = (id: string, file: File) => {
@@ -253,167 +101,39 @@ const App: React.FC = () => {
 
   const handleBulkUpload = (files: FileList) => {
     const newFiles = Array.from(files);
-    
-    // Distribute uploaded files into existing slots
     const newPhotos = [...photos];
     let fileIndex = 0;
-    
+
     for (let i = 0; i < newPhotos.length && fileIndex < newFiles.length; i++) {
-        // Find empty or filled, overwrite from start
-        newPhotos[i].url = URL.createObjectURL(newFiles[fileIndex]);
-        fileIndex++;
+      newPhotos[i].url = URL.createObjectURL(newFiles[fileIndex]);
+      fileIndex++;
     }
     setPhotos(newPhotos);
   };
 
-  const handlePhotoClick = useCallback((photo: PhotoData) => {
-    if (interactionMode === InteractionMode.EDIT) {
-        // handled in Polaroid component for file upload
-        return; 
-    }
-    
-    // View Mode: Zoom In to Photo
-    setFocusedPhoto(photo);
-    setZoomLevel(ZoomLevel.ZOOMED_IN);
-    
-    // Sync Pan Offset for Hand Mode consistency
-    // panOffset.x corresponds to angle, panOffset.y corresponds to height offset
-    panOffset.current = {
-        x: photo.rotation[1], 
-        y: photo.position[1] - CAMERA_CONFIG.ZOOM_IN_POS.y
-    };
-  }, [interactionMode]);
-
-  const handleNextPhoto = useCallback(() => {
-    if (!focusedPhoto || photos.length === 0) return;
-    const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-    // Visual "Next" (Right) should go to the previous index in our CCW spiral
-    const nextIndex = (currentIndex - 1 + photos.length) % photos.length;
-    handlePhotoClick(photos[nextIndex]);
-  }, [focusedPhoto, photos, handlePhotoClick]);
-
-  const handlePrevPhoto = useCallback(() => {
-    if (!focusedPhoto || photos.length === 0) return;
-    const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-    // Visual "Prev" (Left) should go to the next index in our CCW spiral
-    const prevIndex = (currentIndex + 1) % photos.length;
-    handlePhotoClick(photos[prevIndex]);
-  }, [focusedPhoto, photos, handlePhotoClick]);
-
-  // Keyboard Navigation for Album Mode
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (zoomLevel !== ZoomLevel.ZOOMED_IN || isInstaModalOpen || isRecording) return;
-      
-      if (e.key === 'ArrowRight') {
-        handleNextPhoto();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrevPhoto();
-      } else if (e.key === 'Escape') {
-        setZoomLevel(ZoomLevel.FULL_TREE);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [zoomLevel, isInstaModalOpen, isRecording, handleNextPhoto, handlePrevPhoto]);
-
   const handleDeletePhoto = (id: string) => {
     setPhotos(prev => prev.filter(p => p.id !== id));
-    if (focusedPhoto?.id === id) {
-        setFocusedPhoto(null);
-        setZoomLevel(ZoomLevel.FULL_TREE);
-    }
-  };
-
-  const handleInstagramSubmit = async (username: string) => {
-      setInstaLoading(true);
-      setInstaStatus('Scraping Instagram Profile...');
-      
-      try {
-          // 1. Call Webhook to Scrape & Process
-          const response = await fetch(INSTAGRAM_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                  instagramUsername: username,
-                  topXCount: photos.length 
-              })
-          });
-
-          const json = await response.json();
-          
-          if (json.success === false) {
-               throw new Error(json.error || "Failed to process Instagram photos");
-          }
-
-          setInstaStatus('Processing Christmas Transformations...');
-          
-          // Parse new API format based on spec:
-          // { success: true, data: { photos: [{ base64Data: "...", mimeType: "..." }, ...] } }
-          const outputData = json.data;
-
-          if (!outputData || !Array.isArray(outputData.photos)) {
-              console.warn("Unexpected API Response structure:", json);
-              throw new Error("API response did not contain a valid photos array.");
-          }
-
-          const receivedPhotos = outputData.photos;
-
-          if (receivedPhotos.length === 0) {
-              throw new Error(outputData.message || "No photos found for this user.");
-          }
-
-          setInstaStatus(`Hanging ${receivedPhotos.length} photos on the tree...`);
-
-          // Convert to Data URIs
-          const newImageUrls = receivedPhotos.map((p: any) => {
-              if (p.base64Data && p.mimeType) {
-                  return `data:${p.mimeType};base64,${p.base64Data}`;
-              }
-              return null;
-          }).filter((u: string | null): u is string => !!u);
-
-          if (newImageUrls.length === 0) {
-             throw new Error("Failed to construct valid image data from response.");
-          }
-
-          // 2. Update Photos - Fill all available slots by looping through received images
-          const newPhotos = [...photos];
-          for (let i = 0; i < newPhotos.length; i++) {
-              // Loop through the received images to fill all slots
-              newPhotos[i].url = newImageUrls[i % newImageUrls.length];
-          }
-          setPhotos(newPhotos);
-          setIsInstaModalOpen(false);
-
-      } catch (error: any) {
-          console.error(error);
-          alert(`Error: ${error.message}`);
-      } finally {
-          setInstaLoading(false);
-          setInstaStatus('');
-      }
+    // useTreeInteraction hook automatically clears focus if photo is removed
   };
 
   return (
-    <div 
+    <div
       className="relative w-full h-full bg-[#050505]"
       onDoubleClick={handleDoubleClick}
     >
-      <audio 
-        ref={audioRef} 
-        src="/assets/music/christmas-song.mp3" 
-        loop 
+      <audio
+        ref={audioRef}
+        src="/assets/music/christmas-song.mp3"
+        loop
         preload="auto"
       />
-      
-      <Scene 
-        photos={photos} 
-        onUpload={handleSingleUpload} 
+
+      <Scene
+        photos={photos}
+        onUpload={handleSingleUpload}
         onPhotoClick={handlePhotoClick}
         onDelete={handleDeletePhoto}
-        controlMode={controlMode}  
+        controlMode={controlMode}
         interactionMode={interactionMode}
         zoomLevel={zoomLevel}
         panOffset={panOffset}
@@ -422,10 +142,10 @@ const App: React.FC = () => {
         recordingType={recordingType}
         userName={userName}
       />
-      
-      <Overlay 
-        controlMode={controlMode} 
-        setControlMode={setControlMode} 
+
+      <Overlay
+        controlMode={controlMode}
+        setControlMode={setControlMode}
         interactionMode={interactionMode}
         setInteractionMode={setInteractionMode}
         onBulkUpload={handleBulkUpload}
@@ -445,16 +165,16 @@ const App: React.FC = () => {
         isRecording={isRecording}
       />
 
-      <InstagramModal 
+      <InstagramModal
         isOpen={isInstaModalOpen}
         onClose={() => setIsInstaModalOpen(false)}
         onSubmit={handleInstagramSubmit}
         isLoading={instaLoading}
         statusMessage={instaStatus}
       />
-      
-      <HandController 
-        mode={controlMode} 
+
+      <HandController
+        mode={controlMode}
         onGesture={handleGesture}
         videoRef={videoRef}
       />
