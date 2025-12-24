@@ -117,6 +117,16 @@ const CameraController: React.FC<{
 
     if (isRecording) {
       recordingStartTime.current = performance.now();
+
+      // Sync internal state to current camera position to avoid jumps
+      const orbitControls = controls as any;
+      const target = orbitControls?.target || CAMERA_CONFIG.LOOK_AT_OFFSET;
+      const relX = camera.position.x - target.x;
+      const relZ = camera.position.z - target.z;
+
+      currentCamState.current.angle = Math.atan2(relX, relZ);
+      currentCamState.current.radius = Math.sqrt(relX * relX + relZ * relZ);
+      currentCamState.current.height = camera.position.y;
     }
   }, [zoomLevel, controlMode, focusedPhoto, isRecording]);
 
@@ -135,7 +145,7 @@ const CameraController: React.FC<{
         return;
       } else if (recordingType === 'ALBUM' && photos.length > 0) {
         // Album Mode - Cycle through photos
-        const photoInterval = 1; 
+        const photoInterval = 1;
         const index = Math.min(Math.floor(time / photoInterval), photos.length - 1);
         const photo = photos[index];
 
@@ -143,16 +153,31 @@ const CameraController: React.FC<{
         if (orbitControls) {
           const photoPos = new THREE.Vector3(...photo.position);
           photoPos.y += TREE_OFFSET_Y;
-          orbitControls.target.lerp(photoPos, 12 * delta); // Faster lerp
+          
+          // Smoothly move target - faster for 1s interval
+          orbitControls.target.lerp(photoPos, 8 * delta);
 
-          const dist = 6;
-          const angle = photo.rotation[1];
-          const camX = photoPos.x + Math.sin(angle) * dist;
-          const camZ = photoPos.z + Math.cos(angle) * dist;
-          const camY = photoPos.y;
+          // Calculate target camera state
+          const targetAngle = photo.rotation[1];
+          const targetHeight = photoPos.y;
+          const targetRadius = 6;
 
-          const idealPos = new THREE.Vector3(camX, camY, camZ);
-          camera.position.lerp(idealPos, 12 * delta); // Faster lerp
+          // Smoothly interpolate the state components (prevents cutting through tree)
+          let angleDiff = targetAngle - currentCamState.current.angle;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          
+          const lerpSpeed = 6 * delta; 
+          currentCamState.current.angle += angleDiff * lerpSpeed;
+          currentCamState.current.height += (targetHeight - currentCamState.current.height) * lerpSpeed;
+          currentCamState.current.radius += (targetRadius - currentCamState.current.radius) * lerpSpeed;
+
+          // Apply state to camera position relative to the CURRENT target for smoother tracking
+          const camX = orbitControls.target.x + Math.sin(currentCamState.current.angle) * currentCamState.current.radius;
+          const camZ = orbitControls.target.z + Math.cos(currentCamState.current.angle) * currentCamState.current.radius;
+          const camY = currentCamState.current.height;
+
+          camera.position.set(camX, camY, camZ);
           orbitControls.update();
         }
         return;
@@ -415,7 +440,7 @@ const Scene: React.FC<SceneProps> = ({
         <TreeMesh isExploded={isExploded} photos={photos} />
         <SpiralDecor isExploded={isExploded} photos={photos} />
         <Star isExploded={isExploded} />
-        <Presents isExploded={isExploded} />
+        {!(isRecording && recordingType === 'ALBUM') && <Presents isExploded={isExploded} />}
 
         {/* Magic Flies / Sparkles around the tree */}
         <Sparkles
