@@ -15,6 +15,7 @@ interface PolaroidProps {
   isZoomedIn: boolean;
   controlMode: ControlMode;
   interactionMode: InteractionMode;
+  isExploded?: boolean;
 }
 
 const tempScale = new THREE.Vector3();
@@ -26,11 +27,17 @@ const Polaroid: React.FC<PolaroidProps> = ({
   onDelete,
   isZoomedIn, 
   controlMode, 
-  interactionMode 
+  interactionMode,
+  isExploded = false
 }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const explodeProgress = useRef(0);
   const [hovered, setHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const explodeDir = useMemo(() => {
+    return new THREE.Vector3(data.position[0], data.position[1], data.position[2]).normalize().multiplyScalar(15 + Math.random() * 10);
+  }, [data.position]);
 
   const textureUrl = useMemo(() => {
     if (data.url) return data.url;
@@ -43,12 +50,22 @@ const Polaroid: React.FC<PolaroidProps> = ({
   texture.center.set(0.5, 0.5); 
 
   useFrame((state) => {
+    const targetProgress = isExploded ? 1 : 0;
+    const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
+    explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+
     if (groupRef.current) {
       const time = state.clock.elapsedTime;
       const swayAmount = 0.05;
       
-      groupRef.current.rotation.z = data.rotation[1] * 0 + Math.sin(time + data.position[1]) * swayAmount;
-      groupRef.current.rotation.y = data.rotation[1] + Math.sin(time * 0.5 + data.position[0]) * 0.02;
+      groupRef.current.position.set(
+        data.position[0] + explodeDir.x * explodeProgress.current,
+        data.position[1] + explodeDir.y * explodeProgress.current,
+        data.position[2] + explodeDir.z * explodeProgress.current
+      );
+
+      groupRef.current.rotation.z = data.rotation[1] * 0 + Math.sin(time + data.position[1]) * swayAmount + explodeProgress.current * 5;
+      groupRef.current.rotation.y = data.rotation[1] + Math.sin(time * 0.5 + data.position[0]) * 0.02 + explodeProgress.current * 5;
 
       // Adjusted Base scale
       const baseScale = 0.85; 

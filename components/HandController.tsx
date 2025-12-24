@@ -1,25 +1,52 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 import { GESTURE_THRESHOLDS } from '../constants';
-import { ControlMode } from '../types';
+import { ControlMode, ZoomLevel } from '../types';
 
 interface HandControllerProps {
   mode: ControlMode;
-  onGesture: (action: 'ZOOM_IN' | 'ZOOM_OUT' | 'PAN', delta?: {x: number, y: number}) => void;
+  zoomLevel: ZoomLevel;
+  isExploded: boolean;
+  onGesture: (action: 'ZOOM_IN' | 'ZOOM_OUT' | 'NEXT' | 'PREV' | 'PAN' | 'EXPLODE', delta?: {x: number, y: number}) => void;
   videoRef: React.RefObject<HTMLVideoElement>;
 }
 
-const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoRef }) => {
+const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExploded, onGesture, videoRef }) => {
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
   const requestRef = useRef<number>();
   const [loading, setLoading] = useState(true);
+  
+  // Swipe Tracking
+  const historyX = useRef<{val: number, time: number}[]>([]);
+  const lastSwipeTime = useRef<number>(0);
+  
+  // Pan Tracking
   const lastHandPos = useRef<{x: number, y: number} | null>(null);
+
+  // Stability Tracking
+  const gestureFrames = useRef({ fist: 0, open: 0, peace: 0 });
+
   const modeRef = useRef(mode);
+  const zoomLevelRef = useRef(zoomLevel);
+  const isExplodedRef = useRef(isExploded);
+  const onGestureRef = useRef(onGesture);
 
   // Update ref to current mode to avoid stale closures in the detection loop
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    isExplodedRef.current = isExploded;
+  }, [isExploded]);
+
+  useEffect(() => {
+    onGestureRef.current = onGesture;
+  }, [onGesture]);
 
   useEffect(() => {
     const setupHandLandmarker = async () => {
@@ -69,7 +96,9 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
         if (results && results.landmarks.length > 0) {
             processLandmarks(results.landmarks[0]);
         } else {
-            lastHandPos.current = null; // Reset pan tracking if hand lost
+            // Reset tracking if hand lost
+            historyX.current = [];
+            lastHandPos.current = null;
         }
       }
       requestRef.current = requestAnimationFrame(detect);
@@ -91,49 +120,154 @@ const HandController: React.FC<HandControllerProps> = ({ mode, onGesture, videoR
     const pinkyBase = landmarks[17];
     const wrist = landmarks[0];
 
+    // Edge Guard: Ignore gestures if hand is too close to the edge
+    const EDGE_THRESHOLD = 0.05;
+    if (
+        wrist.x < EDGE_THRESHOLD || 
+        wrist.x > 1 - EDGE_THRESHOLD || 
+        wrist.y < EDGE_THRESHOLD || 
+        wrist.y > 1 - EDGE_THRESHOLD
+    ) {
+        // console.log("Edge Guard Triggered");
+        historyX.current = [];
+        lastHandPos.current = null;
+        return;
+    }
+
     // 1. Calculate Pinch/Spread distance (Thumb to Index)
-    const dx = thumbTip.x - indexTip.x;
-    const dy = thumbTip.y - indexTip.y;
-    const dz = thumbTip.z - indexTip.z;
-    const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    const dx_dist = thumbTip.x - indexTip.x;
+    const dy_dist = thumbTip.y - indexTip.y;
+    const dz_dist = thumbTip.z - indexTip.z;
+    const distance = Math.sqrt(dx_dist*dx_dist + dy_dist*dy_dist + dz_dist*dz_dist);
 
     // 2. Check for "Open Palm" (all fingers extended)
-    // In normalized coords, smaller y means higher up
-    const isIndexExtended = indexTip.y < indexBase.y;
-    const isMiddleExtended = middleTip.y < middleBase.y;
-    const isRingExtended = ringTip.y < ringBase.y;
-    const isPinkyExtended = pinkyTip.y < pinkyBase.y;
+    const isIndexExtended = indexTip.y < landmarks[6].y; // Tip above PIP
+    const isMiddleExtended = middleTip.y < landmarks[10].y; // Tip above PIP
+    const isRingExtended = ringTip.y < landmarks[14].y; // Tip above PIP
+    const isPinkyExtended = pinkyTip.y < landmarks[18].y; // Tip above PIP
     
-    // If at least 3 fingers are curled and thumb is close to them, consider it a closed palm (fist)
     const curledCount = [isIndexExtended, isMiddleExtended, isRingExtended, isPinkyExtended].filter(x => !x).length;
-    const isClosedPalm = curledCount >= 3 && distance < GESTURE_THRESHOLDS.SPREAD_DISTANCE;
+    const isClosedPalm = curledCount >= 3 && distance < GESTURE_THRESHOLDS.FIST_DISTANCE;
+    
+    // 3. Check for "Peace Sign" (Index + Middle extended, Ring + Pinky curled)
+    const isPeaceSign = isIndexExtended && isMiddleExtended && !isRingExtended && !isPinkyExtended;
 
-    if (isClosedPalm) {
-        // Closed Palm (Fist) triggers Zoom Out / Reset
-        onGesture('ZOOM_OUT');
-        lastHandPos.current = null; 
-    } else if (distance > GESTURE_THRESHOLDS.SPREAD_DISTANCE) {
-        // Spread Fingers (Open Palm) triggers Zoom In
-        onGesture('ZOOM_IN');
-        
-        // Handle Panning when hand is open/spread
-        const currentX = wrist.x;
-        const currentY = wrist.y;
+    // Debug Gesture Values
+    // Only log every 10th frame to reduce spam, or if specific conditions met
+    // if (Math.random() < 0.05) {
+    //     console.log(`Gesture Debug: dist=${distance.toFixed(3)}, zoom=${zoomLevelRef.current}, isClosed=${isClosedPalm}`);
+    // }
 
-        if (lastHandPos.current) {
-            const panX = (currentX - lastHandPos.current.x) * -1 * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
-            const panY = (currentY - lastHandPos.current.y) * GESTURE_THRESHOLDS.PAN_SENSITIVITY; 
-            
-            const rawDiffX = Math.abs(currentX - lastHandPos.current.x);
-            const rawDiffY = Math.abs(currentY - lastHandPos.current.y);
+    // console.log(`Hand Debug: dist=${distance.toFixed(3)}, curled=${curledCount}, isClosed=${isClosedPalm}`);
 
-            if (rawDiffX > 0.002 || rawDiffY > 0.002) {
-                onGesture('PAN', { x: panX, y: panY });
-            }
+    const now = Date.now();
+    const currentX = wrist.x;
+    const currentY = wrist.y;
+
+    // 0. PEACE SIGN -> EXPLODE (High Priority)
+    if (isPeaceSign) {
+        gestureFrames.current.peace++;
+        if (gestureFrames.current.peace > 6) { // Reduced from 10 to 6 (~100ms)
+            onGestureRef.current('EXPLODE');
+            gestureFrames.current.peace = 0;
         }
-        lastHandPos.current = { x: currentX, y: currentY };
+    } else if (isExplodedRef.current && isClosedPalm) {
+        // If exploded, a fist also returns to normal
+        gestureFrames.current.fist++;
+        if (gestureFrames.current.fist > 6) {
+            onGestureRef.current('EXPLODE');
+            gestureFrames.current.fist = 0;
+        }
     } else {
-        lastHandPos.current = null;
+        gestureFrames.current.peace = 0;
+    }
+
+    // Calculate movement velocity to suppress zoom during fast movement
+    let isMovingFast = false;
+    if (lastHandPos.current) {
+        const dx = currentX - lastHandPos.current.x;
+        const dy = currentY - lastHandPos.current.y;
+        const velocity = Math.sqrt(dx*dx + dy*dy);
+        if (velocity > 0.015) isMovingFast = true; 
+    }
+
+    if (zoomLevelRef.current === ZoomLevel.ZOOMED_IN) {
+        // === ZOOMED IN MODE ===
+        // Priority: Navigation (Swipe)
+        // Exception: Zoom Out (Fist)
+
+        if (isClosedPalm && !isMovingFast) {
+            gestureFrames.current.fist++;
+            gestureFrames.current.open = 0;
+
+            if (gestureFrames.current.fist > 6) { // Must hold fist for ~100ms to Zoom Out
+                onGestureRef.current('ZOOM_OUT');
+                gestureFrames.current.fist = 0;
+                historyX.current = []; 
+                lastHandPos.current = null;
+            }
+        } else {
+            gestureFrames.current.fist = 0;
+            // DEFAULT -> SWIPE DETECTION
+            // (Treat any non-fist as potential swipe)
+            
+            // Add current X to history
+            historyX.current.push({ val: currentX, time: now });
+            // Keep last 10 frames (~160ms)
+            if (historyX.current.length > 10) historyX.current.shift();
+
+            if (now - lastSwipeTime.current > GESTURE_THRESHOLDS.SWIPE_COOLDOWN && historyX.current.length >= 5) {
+                const start = historyX.current[0];
+                const end = historyX.current[historyX.current.length - 1];
+                const dx = end.val - start.val;
+
+                if (Math.abs(dx) > GESTURE_THRESHOLDS.SWIPE_THRESHOLD) {
+                     if (dx > 0) {
+                        onGestureRef.current('PREV');
+                    } else {
+                        onGestureRef.current('NEXT');
+                    }
+                    lastSwipeTime.current = now;
+                    historyX.current = []; // Reset history after swipe
+                }
+            }
+            lastHandPos.current = { x: currentX, y: currentY }; // Update for velocity check
+        }
+
+    } else {
+        // === FULL TREE MODE ===
+        // Priority: Exploration (Pan)
+        // Exception: Zoom In (Open Palm)
+
+        if (distance > GESTURE_THRESHOLDS.SPREAD_DISTANCE && !isMovingFast) {
+            gestureFrames.current.open++;
+            gestureFrames.current.fist = 0;
+
+            if (gestureFrames.current.open > 1) { // Must hold open palm for ~20-30ms to Zoom In
+                onGestureRef.current('ZOOM_IN');
+                gestureFrames.current.open = 0;
+                lastHandPos.current = null; 
+                historyX.current = [];
+            }
+        } else {
+            gestureFrames.current.open = 0;
+            // DEFAULT -> PAN/ROTATE
+            // (Treat any non-open hand as potential pan)
+            
+            if (lastHandPos.current) {
+                const dx = currentX - lastHandPos.current.x;
+                const dy = currentY - lastHandPos.current.y;
+                
+                const panX = dx * -1 * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
+                const panY = dy * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
+
+                if (Math.abs(dx) > 0.002 || Math.abs(dy) > 0.002) {
+                    onGestureRef.current('PAN', { x: panX, y: panY });
+                }
+            }
+            lastHandPos.current = { x: currentX, y: currentY };
+            historyX.current = []; // Reset swipe history
+        }
     }
   };
 

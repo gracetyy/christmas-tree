@@ -158,35 +158,49 @@ const Overlay: React.FC<OverlayProps> = ({
             </div>
 
             <ul className="space-y-4">
-              <li className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                  <Hand size={18} className="text-white/70" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
-                  <span className="text-sm font-medium">Zoom In</span>
-                </div>
-              </li>
-
-              <li className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                  <div className="w-4 h-4 rounded-md border-2 border-white/70" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
-                  <span className="text-sm font-medium">Zoom Out</span>
-                </div>
-              </li>
-
-              <li className="flex items-center gap-4 group">
-                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                  <Move size={18} className="text-white/70" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Move</span>
-                  <span className="text-sm font-medium">Pan View</span>
-                </div>
-              </li>
+              {zoomLevel === ZoomLevel.FULL_TREE ? (
+                <>
+                  <li className="flex items-center gap-4 group">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Move size={18} className="text-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
+                      <span className="text-sm font-medium">Rotate Tree</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-4 group">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Hand size={18} className="text-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
+                      <span className="text-sm font-medium">Zoom In</span>
+                    </div>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-center gap-4 group">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Move size={18} className="text-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Swipe Hand</span>
+                      <span className="text-sm font-medium">Next / Prev</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-4 group">
+                    <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <div className="w-4 h-4 rounded-md border-2 border-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
+                      <span className="text-sm font-medium">Zoom Out</span>
+                    </div>
+                  </li>
+                </>
+              )}
             </ul>
 
             {!isHandReady && (

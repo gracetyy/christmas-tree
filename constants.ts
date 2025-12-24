@@ -44,9 +44,12 @@ export const CAMERA_CONFIG = {
 // --- Hand Gestures ---
 export const GESTURE_THRESHOLDS = {
   PINCH_DISTANCE: 0.04,
-  SPREAD_DISTANCE: 0.18,
+  SPREAD_DISTANCE: 0.25, 
+  FIST_DISTANCE: 0.5, // Stricter threshold for Zoom Out
   SMOOTHING_FACTOR: 0.08, // Smoother camera
   PAN_SENSITIVITY: 6.0,
+  SWIPE_THRESHOLD: 0.05, // Minimum horizontal movement for swipe
+  SWIPE_COOLDOWN: 500, // Lowered to 500ms for faster navigation
 };
 
 // --- Placeholders ---

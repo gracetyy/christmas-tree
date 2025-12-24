@@ -21,6 +21,7 @@ interface SceneProps {
   zoomLevel: ZoomLevel;
   panOffset: React.MutableRefObject<{ x: number, y: number }>;
   focusedPhoto: PhotoData | null;
+  isExploded?: boolean;
   isRecording?: boolean;
   recordingType?: 'FULL' | 'ALBUM' | null;
   userName?: string;
@@ -40,6 +41,13 @@ const CameraController: React.FC<{
   const lookAtTarget = useRef(CAMERA_CONFIG.LOOK_AT_OFFSET.clone());
   const isAnimating = useRef(false);
   const recordingStartTime = useRef(0);
+  
+  // Track current camera state for smoother transitions
+  const currentCamState = useRef({
+    angle: Math.atan2(CAMERA_CONFIG.DEFAULT_POS.x, CAMERA_CONFIG.DEFAULT_POS.z),
+    height: CAMERA_CONFIG.DEFAULT_POS.y,
+    radius: CAMERA_CONFIG.DEFAULT_POS.z
+  });
 
   // Ensure camera starts centered on the tree
   useEffect(() => {
@@ -54,14 +62,33 @@ const CameraController: React.FC<{
 
   useEffect(() => {
     // Reset panning when switching modes or zoom levels
-    if (controlMode === ControlMode.HAND && zoomLevel === ZoomLevel.FULL_TREE) {
-      targetPos.current.copy(CAMERA_CONFIG.DEFAULT_POS);
-      panOffset.current = { x: 0, y: 0 };
+    if (controlMode === ControlMode.HAND) {
+      if (zoomLevel === ZoomLevel.FULL_TREE) {
+        targetPos.current.copy(CAMERA_CONFIG.DEFAULT_POS);
+        panOffset.current = { x: 0, y: 0 };
+      }
+      
+      // Sync state for smooth hand control start
+      const relX = camera.position.x;
+      const relZ = camera.position.z;
+      currentCamState.current.angle = Math.atan2(relX, relZ);
+      currentCamState.current.radius = Math.sqrt(relX * relX + relZ * relZ);
+      currentCamState.current.height = camera.position.y;
     }
 
     // Start animation for Mouse Mode transitions (Zoom In or Out)
     if (controlMode === ControlMode.MOUSE) {
       isAnimating.current = true;
+      
+      // Sync internal state to current camera position to avoid jumps
+      const orbitControls = controls as any;
+      const target = orbitControls?.target || CAMERA_CONFIG.LOOK_AT_OFFSET;
+      const relX = camera.position.x - target.x;
+      const relZ = camera.position.z - target.z;
+      
+      currentCamState.current.angle = Math.atan2(relX, relZ);
+      currentCamState.current.radius = Math.sqrt(relX * relX + relZ * relZ);
+      currentCamState.current.height = camera.position.y;
     }
 
     if (isRecording) {
@@ -109,34 +136,45 @@ const CameraController: React.FC<{
 
     // 1. HAND CONTROL LOGIC (Gestures)
     if (controlMode === ControlMode.HAND) {
+      let targetAngle, targetHeight, targetRadius;
+
       if (zoomLevel === ZoomLevel.ZOOMED_IN) {
         // Calculate Cylindrical coordinates for zooming into the tree
-        const angle = panOffset.current.x; // Azimuth
-        let height = CAMERA_CONFIG.ZOOM_IN_POS.y + panOffset.current.y;
+        targetAngle = panOffset.current.x; // Azimuth
+        let h = CAMERA_CONFIG.ZOOM_IN_POS.y + panOffset.current.y;
 
         // Clamp Height to stay on tree
-        height = Math.max(CAMERA_CONFIG.MIN_HEIGHT, Math.min(CAMERA_CONFIG.MAX_HEIGHT, height));
+        h = Math.max(CAMERA_CONFIG.MIN_HEIGHT, Math.min(CAMERA_CONFIG.MAX_HEIGHT, h));
+        panOffset.current.y = h - CAMERA_CONFIG.ZOOM_IN_POS.y;
 
-        // Update valid pan offset to avoid getting stuck at boundaries
-        panOffset.current.y = height - CAMERA_CONFIG.ZOOM_IN_POS.y;
-
-        const radius = CAMERA_CONFIG.ZOOM_IN_POS.z;
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-
-        targetPos.current.set(x, height, z);
-
-        // Look at the center spine of the tree at the current camera height
-        lookAtTarget.current.set(0, height - 1, 0);
-
+        targetHeight = h;
+        targetRadius = CAMERA_CONFIG.ZOOM_IN_POS.z;
+        lookAtTarget.current.set(0, h - 1, 0);
       } else {
-        // Full Tree View
-        targetPos.current.copy(CAMERA_CONFIG.DEFAULT_POS);
+        // Full Tree View - Allow Rotation (Orbit)
+        targetAngle = panOffset.current.x; 
+        targetRadius = CAMERA_CONFIG.DEFAULT_POS.z;
+        targetHeight = CAMERA_CONFIG.DEFAULT_POS.y;
         lookAtTarget.current.copy(CAMERA_CONFIG.LOOK_AT_OFFSET);
       }
 
-      // Smoothly interpolate current camera to target
-      camera.position.lerp(targetPos.current, GESTURE_THRESHOLDS.SMOOTHING_FACTOR);
+      // Smoothly interpolate the state components
+      const smoothing = GESTURE_THRESHOLDS.SMOOTHING_FACTOR;
+      
+      let angleDiff = targetAngle - currentCamState.current.angle;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      
+      currentCamState.current.angle += angleDiff * smoothing;
+      currentCamState.current.height += (targetHeight - currentCamState.current.height) * smoothing;
+      currentCamState.current.radius += (targetRadius - currentCamState.current.radius) * smoothing;
+
+      // Apply state to camera position
+      const camX = Math.sin(currentCamState.current.angle) * currentCamState.current.radius;
+      const camZ = Math.cos(currentCamState.current.angle) * currentCamState.current.radius;
+      const camY = currentCamState.current.height;
+
+      camera.position.set(camX, camY, camZ);
       camera.lookAt(lookAtTarget.current);
     }
 
@@ -144,7 +182,7 @@ const CameraController: React.FC<{
     else if (controlMode === ControlMode.MOUSE && isAnimating.current) {
       if (controls) {
         const orbitControls = controls as any;
-        const lerpSpeed = 8 * delta; // Slightly faster for smoother feel
+        const lerpSpeed = 4 * delta; // Slower for smoother, less dizzying movement
 
         if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
           // ZOOM IN TO PHOTO
@@ -153,26 +191,63 @@ const CameraController: React.FC<{
           // Move target to the photo
           orbitControls.target.lerp(photoPos, lerpSpeed);
 
-          // Calculate ideal camera position
-          const dist = 6;
-          const angle = focusedPhoto.rotation[1];
-          const camX = photoPos.x + Math.sin(angle) * dist;
-          const camZ = photoPos.z + Math.cos(angle) * dist;
-          const camY = photoPos.y;
+          // Calculate target camera state
+          const targetAngle = focusedPhoto.rotation[1];
+          const targetHeight = photoPos.y;
+          const targetRadius = 6;
 
-          const idealPos = new THREE.Vector3(camX, camY, camZ);
-          camera.position.lerp(idealPos, lerpSpeed);
+          // Smoothly interpolate the state components
+          // This prevents the camera from cutting through the tree
+          
+          // Handle angle wrap-around for shortest path
+          let angleDiff = targetAngle - currentCamState.current.angle;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          
+          currentCamState.current.angle += angleDiff * lerpSpeed;
+          currentCamState.current.height += (targetHeight - currentCamState.current.height) * lerpSpeed;
+          currentCamState.current.radius += (targetRadius - currentCamState.current.radius) * lerpSpeed;
 
+          // Apply state to camera position
+          const camX = photoPos.x + Math.sin(currentCamState.current.angle) * currentCamState.current.radius;
+          const camZ = photoPos.z + Math.cos(currentCamState.current.angle) * currentCamState.current.radius;
+          const camY = currentCamState.current.height;
+
+          camera.position.set(camX, camY, camZ);
           orbitControls.update();
 
           // Check if we have arrived
-          if (camera.position.distanceTo(idealPos) < 0.05 && orbitControls.target.distanceTo(photoPos) < 0.05) {
+          const idealPos = new THREE.Vector3(
+            photoPos.x + Math.sin(targetAngle) * targetRadius,
+            targetHeight,
+            photoPos.z + Math.cos(targetAngle) * targetRadius
+          );
+          
+          if (camera.position.distanceTo(idealPos) < 0.01 && orbitControls.target.distanceTo(photoPos) < 0.01) {
             isAnimating.current = false;
           }
         } else if (zoomLevel === ZoomLevel.FULL_TREE) {
           // ZOOM OUT TO FULL TREE
           orbitControls.target.lerp(CAMERA_CONFIG.LOOK_AT_OFFSET, lerpSpeed);
-          camera.position.lerp(CAMERA_CONFIG.DEFAULT_POS, lerpSpeed);
+          
+          // Also interpolate state back to default
+          const targetAngle = Math.atan2(CAMERA_CONFIG.DEFAULT_POS.x, CAMERA_CONFIG.DEFAULT_POS.z);
+          const targetHeight = CAMERA_CONFIG.DEFAULT_POS.y;
+          const targetRadius = CAMERA_CONFIG.DEFAULT_POS.z;
+
+          let angleDiff = targetAngle - currentCamState.current.angle;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+          currentCamState.current.angle += angleDiff * lerpSpeed;
+          currentCamState.current.height += (targetHeight - currentCamState.current.height) * lerpSpeed;
+          currentCamState.current.radius += (targetRadius - currentCamState.current.radius) * lerpSpeed;
+
+          const camX = Math.sin(currentCamState.current.angle) * currentCamState.current.radius;
+          const camZ = Math.cos(currentCamState.current.angle) * currentCamState.current.radius;
+          const camY = currentCamState.current.height;
+
+          camera.position.set(camX, camY, camZ);
           orbitControls.update();
 
           if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.1) {
@@ -205,6 +280,7 @@ const Scene: React.FC<SceneProps> = ({
   zoomLevel,
   panOffset,
   focusedPhoto,
+  isExploded = false,
   isRecording = false,
   recordingType = null,
   userName = ''
@@ -247,16 +323,16 @@ const Scene: React.FC<SceneProps> = ({
       <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
 
       {/* Global Snow Effect */}
-      <Snow />
+      <Snow isExploded={isExploded} />
 
       {/* Cinematic Greeting for Video Recording - REMOVED per user request (logic moved to Overlay) */}
 
       {/* 3D Scene Elements */}
       <group position={[0, -2, 0]}>
-        <TreeMesh />
-        <SpiralDecor />
-        <Star />
-        <Presents />
+        <TreeMesh isExploded={isExploded} />
+        <SpiralDecor isExploded={isExploded} />
+        <Star isExploded={isExploded} />
+        <Presents isExploded={isExploded} />
 
         {/* Magic Flies / Sparkles around the tree */}
         <Sparkles
@@ -279,6 +355,7 @@ const Scene: React.FC<SceneProps> = ({
             isZoomedIn={zoomLevel === ZoomLevel.ZOOMED_IN}
             controlMode={controlMode}
             interactionMode={interactionMode}
+            isExploded={isExploded}
           />
         ))}
       </group>
