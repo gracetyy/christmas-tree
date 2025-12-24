@@ -2,7 +2,7 @@
 
 Transform your favorite memories into a magical, interactive 3D holiday experience! This project lets you create a beautiful, personalized Christmas tree decorated with your own photos.
 
-**✨ Try it out live at: [gracetyy.github.io/christmas-tree/](https://gracetyy.github.io/christmas-tree/)**
+**✨ Try it out live at: [your-christmas-tree.vercel.app](https://your-christmas-tree.vercel.app)**
 
 ## 🎥 Demo
 
