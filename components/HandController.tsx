@@ -25,6 +25,8 @@ const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExpl
 
   // Stability Tracking
   const gestureFrames = useRef({ fist: 0, open: 0, peace: 0 });
+  const lastExplodeTime = useRef<number>(0);
+  const EXPLODE_COOLDOWN = 1000;
 
   const modeRef = useRef(mode);
   const zoomLevelRef = useRef(zoomLevel);
@@ -167,19 +169,34 @@ const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExpl
     // 0. PEACE SIGN -> EXPLODE (High Priority)
     if (isPeaceSign) {
         gestureFrames.current.peace++;
-        if (gestureFrames.current.peace > 6) { // Reduced from 10 to 6 (~100ms)
+        if (!isExplodedRef.current && gestureFrames.current.peace > 8 && (now - lastExplodeTime.current > EXPLODE_COOLDOWN)) { 
             onGestureRef.current('EXPLODE');
-            gestureFrames.current.peace = 0;
+            lastExplodeTime.current = now;
         }
-    } else if (isExplodedRef.current && isClosedPalm) {
-        // If exploded, a fist also returns to normal
-        gestureFrames.current.fist++;
-        if (gestureFrames.current.fist > 6) {
-            onGestureRef.current('EXPLODE');
-            gestureFrames.current.fist = 0;
+        // Allow panning while holding peace sign
+        if (lastHandPos.current) {
+            const dx = currentX - lastHandPos.current.x;
+            const dy = currentY - lastHandPos.current.y;
+            const panX = dx * -1 * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
+            const panY = dy * GESTURE_THRESHOLDS.PAN_SENSITIVITY;
+            if (Math.abs(dx) > 0.002 || Math.abs(dy) > 0.002) {
+                onGestureRef.current('PAN', { x: panX, y: panY });
+            }
         }
+        lastHandPos.current = { x: currentX, y: currentY };
+        return; // Skip other gestures if peace sign is held
     } else {
         gestureFrames.current.peace = 0;
+    }
+
+    if (isExplodedRef.current && isClosedPalm) {
+        // If exploded, a fist returns to normal
+        gestureFrames.current.fist++;
+        if (gestureFrames.current.fist > 8 && (now - lastExplodeTime.current > EXPLODE_COOLDOWN)) {
+            onGestureRef.current('EXPLODE');
+            gestureFrames.current.fist = 0;
+            lastExplodeTime.current = now;
+        }
     }
 
     // Calculate movement velocity to suppress zoom during fast movement

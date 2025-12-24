@@ -55,7 +55,7 @@ export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', 
 
 
 
-    // Festive Background Colors (Dark Red / Dark Green)
+    // Festive Background Colors (Dark Red / Dark Green / Dark Blue)
 
     let colorStart = '#083f1eff'; // Green-900
     let colorEnd = '#01170aff';   // Green-950
@@ -64,6 +64,11 @@ export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', 
         // Dark Green for Bell
         colorStart = '#320707ff'; // Red-950
         colorEnd = '#250404';   // Near Black Red
+    } 
+    if (type === 'snowflake') {
+        // Dark Blue for Snowflake
+        colorStart = '#1e293b'; // Slate-800
+        colorEnd = '#0f172a';   // Slate-900
     } 
     // 1. Festive Background with Radial Gradient
     const gradient = ctx.createRadialGradient(256, 256, 50, 256, 256, 400);
@@ -146,12 +151,7 @@ export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', 
 
         // Ribbon
         ctx.fillStyle = '#FFFFFF'; 
-        ctx.beginPath();
-        ctx.ellipse(-40, -110, 40, 25, -Math.PI/4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(40, -110, 40, 25, Math.PI/4, 0, Math.PI * 2);
-        ctx.fill();
+        // Center knot (unchanged)
         ctx.beginPath();
         ctx.arc(0, -110, 15, 0, Math.PI * 2);
         ctx.fill();

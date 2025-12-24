@@ -7,9 +7,10 @@ interface UseInstagramProps {
     photos: PhotoData[];
     setPhotos: React.Dispatch<React.SetStateAction<PhotoData[]>>;
     onComplete?: (lastPhoto: PhotoData) => void;
+    onError?: (message: string) => void;
 }
 
-export const useInstagram = ({ photos, setPhotos, onComplete }: UseInstagramProps) => {
+export const useInstagram = ({ photos, setPhotos, onComplete, onError }: UseInstagramProps) => {
     const [isInstaModalOpen, setIsInstaModalOpen] = useState(false);
     const [instaLoading, setInstaLoading] = useState(false);
     const [instaStatus, setInstaStatus] = useState('');
@@ -91,7 +92,11 @@ export const useInstagram = ({ photos, setPhotos, onComplete }: UseInstagramProp
 
         } catch (error: any) {
             console.error(error);
-            alert(`Error: ${error.message}`);
+            if (onError) {
+                onError(error.message);
+            } else {
+                alert(`Error: ${error.message}`);
+            }
         } finally {
             setInstaLoading(false);
             setInstaStatus('');

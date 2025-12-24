@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PhotoData } from '../types';
 
-export const useRecording = (photos: PhotoData[]) => {
+export const useRecording = (photos: PhotoData[], onError?: (message: string) => void) => {
     const [isRecording, setIsRecording] = useState(false);
     const [recordingType, setRecordingType] = useState<'FULL' | 'ALBUM' | null>(null);
 
@@ -18,7 +18,11 @@ export const useRecording = (photos: PhotoData[]) => {
             if (!canvas) {
                 setIsRecording(false);
                 setRecordingType(null);
-                alert('Unable to find canvas to record.');
+                if (onError) {
+                    onError('Unable to find canvas to record.');
+                } else {
+                    alert('Unable to find canvas to record.');
+                }
                 return;
             }
 
@@ -59,7 +63,11 @@ export const useRecording = (photos: PhotoData[]) => {
             };
             mediaRecorder.onstop = () => {
                 if (chunks.length === 0) {
-                    alert('Recording failed: no data was captured. Please try again.');
+                    if (onError) {
+                        onError('Recording failed: no data was captured. Please try again.');
+                    } else {
+                        alert('Recording failed: no data was captured. Please try again.');
+                    }
                     setIsRecording(false);
                     setRecordingType(null);
                     return;
@@ -78,7 +86,11 @@ export const useRecording = (photos: PhotoData[]) => {
 
             mediaRecorder.onerror = (e) => {
                 console.error('MediaRecorder error:', e);
-                alert('Recording failed to start. Please try again or use a modern browser.');
+                if (onError) {
+                    onError('Recording failed to start. Please try again or use a modern browser.');
+                } else {
+                    alert('Recording failed to start. Please try again or use a modern browser.');
+                }
                 setIsRecording(false);
                 setRecordingType(null);
             };

@@ -22,7 +22,15 @@ interface OverlayProps {
   setIsNameSet: (set: boolean) => void;
   onRecordVideo: (type: 'FULL' | 'ALBUM') => void;
   isRecording: boolean;
+  isExploded?: boolean;
 }
+
+const PeaceIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M14 12V5a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7" />
+    <path d="M10 12V8a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" />
+  </svg>
+);
 
 const Overlay: React.FC<OverlayProps> = ({
   controlMode,
@@ -43,9 +51,11 @@ const Overlay: React.FC<OverlayProps> = ({
   isNameSet,
   setIsNameSet,
   onRecordVideo,
-  isRecording
+  isRecording,
+  isExploded
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const triggerBulkUpload = () => {
     fileInputRef.current?.click();
@@ -158,7 +168,28 @@ const Overlay: React.FC<OverlayProps> = ({
             </div>
 
             <ul className="space-y-3 md:space-y-4">
-              {zoomLevel === ZoomLevel.FULL_TREE ? (
+              {isExploded ? (
+                <>
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
+                      <span className="text-xs md:text-sm font-medium">Float Around</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
+                      <span className="text-xs md:text-sm font-medium">Exit Explode</span>
+                    </div>
+                  </li>
+                </>
+              ) : zoomLevel === ZoomLevel.FULL_TREE ? (
                 <>
                   <li className="flex items-center gap-3 md:gap-4 group">
                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
@@ -179,6 +210,15 @@ const Overlay: React.FC<OverlayProps> = ({
                     <div className="flex flex-col">
                       <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
                       <span className="text-xs md:text-sm font-medium">Zoom In</span>
+                    </div>
+                  </li>
+                  <li className="flex items-center gap-3 md:gap-4 group">
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                      <PeaceIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Peace Sign</span>
+                      <span className="text-xs md:text-sm font-medium">Explode Tree</span>
                     </div>
                   </li>
                 </>
@@ -256,7 +296,7 @@ const Overlay: React.FC<OverlayProps> = ({
                       }`}
                   >
                     <Mouse className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                    <span className="text-[9px] md:text-xs font-medium">Mouse</span>
+                    <span className="text-[9px] md:text-xs font-medium">{isMobile ? 'Touch' : 'Mouse'}</span>
                   </button>
                   <button
                     onClick={() => setControlMode(ControlMode.HAND)}
