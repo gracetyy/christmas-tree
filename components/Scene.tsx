@@ -19,17 +19,17 @@ interface SceneProps {
   controlMode: ControlMode;
   interactionMode: InteractionMode;
   zoomLevel: ZoomLevel;
-  panOffset: React.MutableRefObject<{x: number, y: number}>;
+  panOffset: React.MutableRefObject<{ x: number, y: number }>;
   focusedPhoto: PhotoData | null;
   isRecording?: boolean;
   recordingType?: 'FULL' | 'ALBUM' | null;
   userName?: string;
 }
 
-const CameraController: React.FC<{ 
-  zoomLevel: ZoomLevel; 
-  controlMode: ControlMode; 
-  panOffset: React.MutableRefObject<{x: number, y: number}>;
+const CameraController: React.FC<{
+  zoomLevel: ZoomLevel;
+  controlMode: ControlMode;
+  panOffset: React.MutableRefObject<{ x: number, y: number }>;
   focusedPhoto: PhotoData | null;
   isRecording: boolean;
   recordingType: 'FULL' | 'ALBUM' | null;
@@ -58,10 +58,10 @@ const CameraController: React.FC<{
       targetPos.current.copy(CAMERA_CONFIG.DEFAULT_POS);
       panOffset.current = { x: 0, y: 0 };
     }
-    
+
     // Start animation for Mouse Mode transitions (Zoom In or Out)
     if (controlMode === ControlMode.MOUSE) {
-        isAnimating.current = true;
+      isAnimating.current = true;
     }
 
     if (isRecording) {
@@ -73,13 +73,13 @@ const CameraController: React.FC<{
     // 0. RECORDING LOGIC
     if (isRecording) {
       const time = (performance.now() - recordingStartTime.current) / 1000;
-      
+
       if (recordingType === 'FULL') {
         // Full Tree Rotation
         const angle = time * (Math.PI * 2 / 10); // 360 degrees in 10s
-        const radius = 40;
-        camera.position.set(Math.sin(angle) * radius, 15, Math.cos(angle) * radius);
-        camera.lookAt(0, 5, 0);
+        const radius = 32; // Standard view distance
+        camera.position.set(Math.sin(angle) * radius, 0, Math.cos(angle) * radius);
+        camera.lookAt(0, -1, 0);
         if (controls) (controls as any).update();
         return;
       } else if (recordingType === 'ALBUM' && photos.length > 0) {
@@ -87,17 +87,17 @@ const CameraController: React.FC<{
         const photoInterval = 2.5; // 2.5s per photo
         const index = Math.min(Math.floor(time / photoInterval), photos.length - 1);
         const photo = photos[index];
-        
+
         const orbitControls = controls as any;
         if (orbitControls) {
           const photoPos = new THREE.Vector3(...photo.position);
           orbitControls.target.lerp(photoPos, 8 * delta);
-          
+
           const dist = 6;
           const angle = photo.rotation[1];
           const camX = photoPos.x + Math.sin(angle) * dist;
           const camZ = photoPos.z + Math.cos(angle) * dist;
-          const camY = photoPos.y; 
+          const camY = photoPos.y;
 
           const idealPos = new THREE.Vector3(camX, camY, camZ);
           camera.position.lerp(idealPos, 8 * delta);
@@ -113,19 +113,19 @@ const CameraController: React.FC<{
         // Calculate Cylindrical coordinates for zooming into the tree
         const angle = panOffset.current.x; // Azimuth
         let height = CAMERA_CONFIG.ZOOM_IN_POS.y + panOffset.current.y;
-        
+
         // Clamp Height to stay on tree
         height = Math.max(CAMERA_CONFIG.MIN_HEIGHT, Math.min(CAMERA_CONFIG.MAX_HEIGHT, height));
-        
+
         // Update valid pan offset to avoid getting stuck at boundaries
         panOffset.current.y = height - CAMERA_CONFIG.ZOOM_IN_POS.y;
 
         const radius = CAMERA_CONFIG.ZOOM_IN_POS.z;
         const x = Math.sin(angle) * radius;
         const z = Math.cos(angle) * radius;
-        
+
         targetPos.current.set(x, height, z);
-        
+
         // Look at the center spine of the tree at the current camera height
         lookAtTarget.current.set(0, height - 1, 0);
 
@@ -138,103 +138,103 @@ const CameraController: React.FC<{
       // Smoothly interpolate current camera to target
       camera.position.lerp(targetPos.current, GESTURE_THRESHOLDS.SMOOTHING_FACTOR);
       camera.lookAt(lookAtTarget.current);
-    } 
-    
+    }
+
     // 2. MOUSE CONTROL LOGIC (Animation)
     else if (controlMode === ControlMode.MOUSE && isAnimating.current) {
-        if (controls) {
-            const orbitControls = controls as any;
-            const lerpSpeed = 8 * delta; // Slightly faster for smoother feel
+      if (controls) {
+        const orbitControls = controls as any;
+        const lerpSpeed = 8 * delta; // Slightly faster for smoother feel
 
-            if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
-                // ZOOM IN TO PHOTO
-                const photoPos = new THREE.Vector3(...focusedPhoto.position);
-                
-                // Move target to the photo
-                orbitControls.target.lerp(photoPos, lerpSpeed);
-                
-                // Calculate ideal camera position
-                const dist = 6; 
-                const angle = focusedPhoto.rotation[1];
-                const camX = photoPos.x + Math.sin(angle) * dist;
-                const camZ = photoPos.z + Math.cos(angle) * dist;
-                const camY = photoPos.y; 
+        if (zoomLevel === ZoomLevel.ZOOMED_IN && focusedPhoto) {
+          // ZOOM IN TO PHOTO
+          const photoPos = new THREE.Vector3(...focusedPhoto.position);
 
-                const idealPos = new THREE.Vector3(camX, camY, camZ);
-                camera.position.lerp(idealPos, lerpSpeed);
-                
-                orbitControls.update();
+          // Move target to the photo
+          orbitControls.target.lerp(photoPos, lerpSpeed);
 
-                // Check if we have arrived
-                if (camera.position.distanceTo(idealPos) < 0.05 && orbitControls.target.distanceTo(photoPos) < 0.05) {
-                    isAnimating.current = false;
-                }
-            } else if (zoomLevel === ZoomLevel.FULL_TREE) {
-                // ZOOM OUT TO FULL TREE
-                orbitControls.target.lerp(CAMERA_CONFIG.LOOK_AT_OFFSET, lerpSpeed);
-                camera.position.lerp(CAMERA_CONFIG.DEFAULT_POS, lerpSpeed);
-                orbitControls.update();
+          // Calculate ideal camera position
+          const dist = 6;
+          const angle = focusedPhoto.rotation[1];
+          const camX = photoPos.x + Math.sin(angle) * dist;
+          const camZ = photoPos.z + Math.cos(angle) * dist;
+          const camY = photoPos.y;
 
-                if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.1) {
-                    isAnimating.current = false;
-                }
-            }
+          const idealPos = new THREE.Vector3(camX, camY, camZ);
+          camera.position.lerp(idealPos, lerpSpeed);
+
+          orbitControls.update();
+
+          // Check if we have arrived
+          if (camera.position.distanceTo(idealPos) < 0.05 && orbitControls.target.distanceTo(photoPos) < 0.05) {
+            isAnimating.current = false;
+          }
+        } else if (zoomLevel === ZoomLevel.FULL_TREE) {
+          // ZOOM OUT TO FULL TREE
+          orbitControls.target.lerp(CAMERA_CONFIG.LOOK_AT_OFFSET, lerpSpeed);
+          camera.position.lerp(CAMERA_CONFIG.DEFAULT_POS, lerpSpeed);
+          orbitControls.update();
+
+          if (camera.position.distanceTo(CAMERA_CONFIG.DEFAULT_POS) < 0.1) {
+            isAnimating.current = false;
+          }
         }
+      }
     }
   });
 
   return (
-    <OrbitControls 
-        enabled={controlMode === ControlMode.MOUSE} 
-        enableZoom={true}
-        enablePan={controlMode === ControlMode.MOUSE}
-        minDistance={2}
-        maxDistance={100}
-        makeDefault
+    <OrbitControls
+      enabled={controlMode === ControlMode.MOUSE}
+      enableZoom={true}
+      enablePan={controlMode === ControlMode.MOUSE}
+      minDistance={2}
+      maxDistance={100}
+      makeDefault
     />
   );
 };
 
-const Scene: React.FC<SceneProps> = ({ 
-    photos, 
-    onUpload, 
-    onPhotoClick, 
-    onDelete,
-    controlMode,  
-    interactionMode, 
-    zoomLevel,
-    panOffset, 
-    focusedPhoto,
-    isRecording = false,
-    recordingType = null,
-    userName = ''
+const Scene: React.FC<SceneProps> = ({
+  photos,
+  onUpload,
+  onPhotoClick,
+  onDelete,
+  controlMode,
+  interactionMode,
+  zoomLevel,
+  panOffset,
+  focusedPhoto,
+  isRecording = false,
+  recordingType = null,
+  userName = ''
 }) => {
   return (
     <Canvas
       dpr={[1, 1.5]} // clamp device pixel ratio to reduce GPU load on hi-DPI screens
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
-      gl={{ 
-        antialias: true, 
-        toneMapping: THREE.ReinhardToneMapping, 
-        toneMappingExposure: 1.2, 
+      gl={{
+        antialias: true,
+        toneMapping: THREE.ReinhardToneMapping,
+        toneMappingExposure: 1.2,
         preserveDrawingBuffer: true, // required for clean downloads
         powerPreference: 'high-performance',
       }}
       style={{ background: COLORS.BACKGROUND, position: 'relative', zIndex: 0 }}
     >
-      <CameraController 
-        zoomLevel={zoomLevel} 
-        controlMode={controlMode} 
-        panOffset={panOffset} 
+      <CameraController
+        zoomLevel={zoomLevel}
+        controlMode={controlMode}
+        panOffset={panOffset}
         focusedPhoto={focusedPhoto}
         isRecording={isRecording}
         recordingType={recordingType}
         photos={photos}
       />
-      
+
       {/* City preset gives nice reflections for shiny objects */}
       <Environment preset="city" background={false} environmentIntensity={1.0} />
-      
+
       {/* Lighting Setup */}
       <ambientLight intensity={0.1} />
       {/* Warm Main Light */}
@@ -243,33 +243,13 @@ const Scene: React.FC<SceneProps> = ({
       <pointLight position={[-20, 5, -20]} intensity={0.5} color="#0055ff" distance={50} decay={2} />
       {/* Rim Light for shape definition */}
       <spotLight position={[0, 30, 0]} intensity={1} angle={0.5} penumbra={1} color="#ffffff" />
-      
+
       <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
-      
+
       {/* Global Snow Effect */}
       <Snow />
 
-      {/* Cinematic Greeting for Video Recording - Stays fixed on screen during capture */}
-      {isRecording && (
-        <Hud>
-          <orthographicCamera makeDefault position={[0, 0, 10]} />
-          <group position={[0, 4.2, 0]}>
-            <Text
-              font="https://fonts.gstatic.com/s/greatvibes/v15/RWm0oG3Wwu8bG_Y9uOevYBRmKvnX96U.woff"
-              fontSize={1.2}
-              color="#fff1a1"
-              anchorX="center"
-              anchorY="top"
-              outlineWidth={0.03}
-              outlineColor="#000000"
-              maxWidth={10}
-              textAlign="center"
-            >
-              {`Merry Christmas\n${userName || 'everyone'}!`}
-            </Text>
-          </group>
-        </Hud>
-      )}
+      {/* Cinematic Greeting for Video Recording - REMOVED per user request (logic moved to Overlay) */}
 
       {/* 3D Scene Elements */}
       <group position={[0, -2, 0]}>
@@ -277,23 +257,23 @@ const Scene: React.FC<SceneProps> = ({
         <SpiralDecor />
         <Star />
         <Presents />
-        
+
         {/* Magic Flies / Sparkles around the tree */}
-        <Sparkles 
-            position={[0, -3, 0]}
-            count={120}
-            scale={[12, 10, 12]}
-            size={15}
-            speed={0.2}
-            opacity={0.7}
-            color="#fff1a1"
+        <Sparkles
+          position={[0, -3, 0]}
+          count={120}
+          scale={[12, 10, 12]}
+          size={15}
+          speed={0.2}
+          opacity={0.7}
+          color="#fff1a1"
         />
-        
+
         {photos.map((photo) => (
-          <Polaroid 
-            key={photo.id} 
-            data={photo} 
-            onUpload={onUpload} 
+          <Polaroid
+            key={photo.id}
+            data={photo}
+            onUpload={onUpload}
             onPhotoClick={onPhotoClick}
             onDelete={onDelete}
             isZoomedIn={zoomLevel === ZoomLevel.ZOOMED_IN}
