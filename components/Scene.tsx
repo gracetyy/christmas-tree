@@ -249,7 +249,27 @@ const Scene: React.FC<SceneProps> = ({
       {/* Global Snow Effect */}
       <Snow />
 
-      {/* Cinematic Greeting for Video Recording - REMOVED per user request (logic moved to Overlay) */}
+      {/* Cinematic Greeting for Video Recording - rendered into the canvas so it's captured */}
+      {isRecording && (
+        <Hud>
+          <orthographicCamera makeDefault position={[0, 0, 10]} />
+          <group position={[0, 4.2, 0]}>
+            <Text
+              font="/fonts/GreatVibes-Regular.ttf"
+              fontSize={1.2}
+              color="#fff1a1"
+              anchorX="center"
+              anchorY="top"
+              outlineWidth={0.03}
+              outlineColor="#000000"
+              maxWidth={10}
+              textAlign="center"
+            >
+              {`Merry Christmas${userName ? ` ${userName}` : ''}!`}
+            </Text>
+          </group>
+        </Hud>
+      )}
 
       {/* 3D Scene Elements */}
       <group position={[0, -2, 0]}>
