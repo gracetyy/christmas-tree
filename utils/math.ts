@@ -46,7 +46,12 @@ export const generatePhotoPositions = (count: number) => {
   return positions;
 };
 
+const textureCache: Record<string, string> = {};
+
 export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', bgColor: string, iconColor: string): string => {
+    const cacheKey = `${type}-${bgColor}-${iconColor}`;
+    if (textureCache[cacheKey]) return textureCache[cacheKey];
+
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 512;
@@ -205,5 +210,7 @@ export const generatePlaceholderTexture = (type: 'snowflake' | 'bell' | 'tree', 
         ctx.fill();
     }
 
-    return canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL('image/png');
+    textureCache[cacheKey] = dataUrl;
+    return dataUrl;
 };

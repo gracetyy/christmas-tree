@@ -1,7 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, Environment, Sparkles, Text, Billboard, Hud } from '@react-three/drei';
+import { OrbitControls, Stars, Environment, Sparkles, AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
+import { EffectComposer, Bloom, Noise, Vignette, BrightnessContrast, ChromaticAberration, SMAA, DepthOfField } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import TreeMesh from './TreeMesh';
 import SpiralDecor from './SpiralDecor';
 import Polaroid from './Polaroid';
@@ -28,6 +30,26 @@ interface SceneProps {
 }
 
 const TREE_OFFSET_Y = -2;
+
+const SceneEffects: React.FC<{
+  zoomLevel: ZoomLevel;
+  focusedPhoto: PhotoData | null;
+  isRecording: boolean;
+  recordingType: 'FULL' | 'ALBUM' | null;
+  photos: PhotoData[];
+}> = () => {
+  return (
+    <EffectComposer disableNormalPass multisampling={4}>
+      <Bloom 
+        intensity={0.5} 
+        luminanceThreshold={0.9} 
+        luminanceSmoothing={0.9} 
+      />
+    
+      <Vignette eskil={false} offset={0.1} darkness={1.1} />
+    </EffectComposer>
+  );
+};
 
 const CameraController: React.FC<{
   zoomLevel: ZoomLevel;
@@ -113,14 +135,15 @@ const CameraController: React.FC<{
         return;
       } else if (recordingType === 'ALBUM' && photos.length > 0) {
         // Album Mode - Cycle through photos
-        const photoInterval = 2.5; // 2.5s per photo
+        const photoInterval = 1; 
         const index = Math.min(Math.floor(time / photoInterval), photos.length - 1);
         const photo = photos[index];
 
         const orbitControls = controls as any;
         if (orbitControls) {
           const photoPos = new THREE.Vector3(...photo.position);
-          orbitControls.target.lerp(photoPos, 8 * delta);
+          photoPos.y += TREE_OFFSET_Y;
+          orbitControls.target.lerp(photoPos, 12 * delta); // Faster lerp
 
           const dist = 6;
           const angle = photo.rotation[1];
@@ -129,7 +152,7 @@ const CameraController: React.FC<{
           const camY = photoPos.y;
 
           const idealPos = new THREE.Vector3(camX, camY, camZ);
-          camera.position.lerp(idealPos, 8 * delta);
+          camera.position.lerp(idealPos, 12 * delta); // Faster lerp
           orbitControls.update();
         }
         return;
@@ -347,14 +370,14 @@ const Scene: React.FC<SceneProps> = ({
 }) => {
   return (
     <Canvas
-      dpr={[1, 1.5]} // clamp device pixel ratio to reduce GPU load on hi-DPI screens
+      dpr={[1, 2]}
       camera={{ position: CAMERA_CONFIG.DEFAULT_POS, fov: CAMERA_CONFIG.FOV }}
       gl={{
         antialias: true,
         alpha: false,
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.0,
-        preserveDrawingBuffer: true, // required for clean downloads
+        preserveDrawingBuffer: true, 
         powerPreference: 'high-performance',
       }}
       style={{ background: COLORS.BACKGROUND, position: 'relative', zIndex: 0 }}
@@ -386,28 +409,6 @@ const Scene: React.FC<SceneProps> = ({
 
       {/* Global Snow Effect */}
       <Snow isExploded={isExploded} />
-
-      {/* Cinematic Greeting for Video Recording - rendered into the canvas so it's captured */}
-      {isRecording && (
-        <Hud>
-          <orthographicCamera makeDefault position={[0, 0, 10]} />
-          <group position={[0, 4.2, 0]}>
-            <Text
-              font="/fonts/GreatVibes-Regular.ttf"
-              fontSize={1.2}
-              color="#fff1a1"
-              anchorX="center"
-              anchorY="top"
-              outlineWidth={0.03}
-              outlineColor="#000000"
-              maxWidth={10}
-              textAlign="center"
-            >
-              {`Merry Christmas${userName ? ` ${userName}` : ''}!`}
-            </Text>
-          </group>
-        </Hud>
-      )}
 
       {/* 3D Scene Elements */}
       <group position={[0, TREE_OFFSET_Y, 0]}>
@@ -442,6 +443,14 @@ const Scene: React.FC<SceneProps> = ({
           />
         ))}
       </group>
+
+      <SceneEffects 
+        zoomLevel={zoomLevel} 
+        focusedPhoto={focusedPhoto} 
+        isRecording={isRecording}
+        recordingType={recordingType}
+        photos={photos}
+      />
     </Canvas>
   );
 };

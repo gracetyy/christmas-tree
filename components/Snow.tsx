@@ -19,6 +19,7 @@ const getSnowTexture = () => {
 const Snow: React.FC<{ isExploded?: boolean }> = ({ isExploded = false }) => {
   const count = 1200; // Reduced for performance
   const mesh = useRef<THREE.Points>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
   const explodeProgress = useRef(0);
   
   const texture = useMemo(() => getSnowTexture(), []);
@@ -48,43 +49,70 @@ const Snow: React.FC<{ isExploded?: boolean }> = ({ isExploded = false }) => {
     }
     
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-    return { positions, velocities, explodeDirs, geo };
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('velocity', new THREE.BufferAttribute(velocities, 1));
+    geo.setAttribute('explodeDir', new THREE.BufferAttribute(explodeDirs, 3));
+    return { geo };
   }, []);
 
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uExplodeProgress: { value: 0 },
+    uTexture: { value: texture },
+    uSize: { value: 0.25 }
+  }), [texture]);
+
   useFrame((state) => {
-    if (!mesh.current) return;
+    if (!materialRef.current) return;
     
     const targetProgress = isExploded ? 1 : 0;
-    const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
+    const lerpFactor = isExploded ? 0.05 : 0.12;
     explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
 
-    const positions = mesh.current.geometry.attributes.position.array as Float32Array;
-    
-    for (let i = 0; i < count; i++) {
-      // Base falling motion
-      const basePos = particles.positions[i * 3 + 1] - (state.clock.elapsedTime * particles.velocities[i] * 50) % 50;
-      
-      positions[i * 3] = particles.positions[i * 3] + particles.explodeDirs[i * 3] * explodeProgress.current;
-      positions[i * 3 + 1] = basePos + particles.explodeDirs[i * 3 + 1] * explodeProgress.current;
-      positions[i * 3 + 2] = particles.positions[i * 3 + 2] + particles.explodeDirs[i * 3 + 2] * explodeProgress.current;
-    }
-    
-    mesh.current.geometry.attributes.position.needsUpdate = true;
+    materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+    materialRef.current.uniforms.uExplodeProgress.value = explodeProgress.current;
   });
 
   return (
     <points ref={mesh} geometry={particles.geo}>
-      <pointsMaterial
-        size={0.25}
-        color="#ffffff"
-        map={texture}
+      <shaderMaterial
+        ref={materialRef}
         transparent
-        opacity={0.8}
-        sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}
-        alphaTest={0.5}
+        uniforms={uniforms}
+        vertexShader={`
+          uniform float uTime;
+          uniform float uExplodeProgress;
+          uniform float uSize;
+          attribute float velocity;
+          attribute vec3 explodeDir;
+          
+          void main() {
+            vec3 pos = position;
+            
+            // Base falling motion
+            float fall = mod(uTime * velocity * 50.0, 50.0);
+            pos.y -= fall;
+            
+            // Wrap around Y
+            if (pos.y < -10.0) pos.y += 50.0;
+            
+            // Explosion
+            pos += explodeDir * uExplodeProgress;
+            
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_PointSize = uSize * (300.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `}
+        fragmentShader={`
+          uniform sampler2D uTexture;
+          void main() {
+            gl_FragColor = texture2D(uTexture, gl_PointCoord);
+            if (gl_FragColor.a < 0.1) discard;
+          }
+        `}
       />
     </points>
   );

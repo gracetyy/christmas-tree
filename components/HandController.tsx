@@ -192,7 +192,7 @@ const HandController: React.FC<HandControllerProps> = ({ mode, zoomLevel, isExpl
     if (isExplodedRef.current && isClosedPalm) {
         // If exploded, a fist returns to normal
         gestureFrames.current.fist++;
-        if (gestureFrames.current.fist > 8 && (now - lastExplodeTime.current > EXPLODE_COOLDOWN)) {
+        if (gestureFrames.current.fist > 3 && (now - lastExplodeTime.current > EXPLODE_COOLDOWN)) {
             onGestureRef.current('EXPLODE');
             gestureFrames.current.fist = 0;
             lastExplodeTime.current = now;
