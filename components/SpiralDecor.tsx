@@ -342,6 +342,7 @@ const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false, photos = 
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             alphaTest={0.01}
+            toneMapped={false}
             onBeforeCompile={(shader) => {
               shader.uniforms.uTime = uniforms.uTime;
               shader.vertexShader = shader.vertexShader.replace(
