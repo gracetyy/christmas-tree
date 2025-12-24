@@ -22,9 +22,14 @@ const GlowTexture = () => {
   return new THREE.CanvasTexture(canvas);
 }
 
-const Star: React.FC = () => {
+interface StarProps {
+  isExploded?: boolean;
+}
+
+const Star: React.FC<StarProps> = ({ isExploded = false }) => {
   const groupRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.PointLight>(null);
+  const explodeProgress = useRef(0);
   const [hovered, setHovered] = useState(false);
   const [starCount, setStarCount] = useState<number | null>(null);
 
@@ -74,14 +79,19 @@ const Star: React.FC = () => {
   }, []);
 
   useFrame((state) => {
+    const targetProgress = isExploded ? 1 : 0;
+    const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
+    explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+
     if (groupRef.current) {
       const time = state.clock.elapsedTime;
 
-      // Gentle floating motion
-      groupRef.current.position.y = (TREE_CONFIG.HEIGHT / 2) + 0.8 + Math.sin(time * 1.5) * 0.1;
+      // Gentle floating motion + Explode offset
+      const baseY = (TREE_CONFIG.HEIGHT / 2) + 0.8;
+      groupRef.current.position.y = baseY + Math.sin(time * 1.5) * 0.1 + explodeProgress.current * 20;
 
-      // Slow rotation
-      groupRef.current.rotation.y = time * 0.5;
+      // Slow rotation + Explode spin
+      groupRef.current.rotation.y = time * (0.5 + explodeProgress.current * 5);
       groupRef.current.rotation.z = Math.sin(time * 0.5) * 0.1;
 
       // Pulsing scale
@@ -90,7 +100,7 @@ const Star: React.FC = () => {
 
       // Pulse the light intensity
       if (glowRef.current) {
-        glowRef.current.intensity = 3 + Math.sin(time * 3) * 1;
+        glowRef.current.intensity = (3 + Math.sin(time * 3) * 1) * (1 - explodeProgress.current * 0.8);
       }
     }
   });

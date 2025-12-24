@@ -3,8 +3,13 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { COLORS, TREE_CONFIG } from '../constants';
 
-const TreeMesh: React.FC = () => {
+interface TreeMeshProps {
+  isExploded?: boolean;
+}
+
+const TreeMesh: React.FC<TreeMeshProps> = ({ isExploded = false }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const explodeProgress = useRef(0);
 
   // Generate particles for the tree body
   const particles = useMemo(() => {
@@ -26,6 +31,9 @@ const TreeMesh: React.FC = () => {
       const rotY = Math.random() * Math.PI;
       const rotZ = Math.random() * Math.PI;
 
+      // Explode direction (outwards from center)
+      const explodeDir = new THREE.Vector3(x, y, z).normalize().multiplyScalar(10 + Math.random() * 20);
+
       // Gradient from BOTTOM (#1FAA6A) to TOP (#1cbd62)
       const color = new THREE.Color().lerpColors(
         new THREE.Color(COLORS.TREE_BOTTOM),
@@ -33,14 +41,50 @@ const TreeMesh: React.FC = () => {
         yNorm
       );
 
-      temp.push({ position: [x, y, z], rotation: [rotX, rotY, rotZ], scale: Math.random() * 0.5 + 0.5, color });
+      temp.push({ 
+        position: [x, y, z], 
+        rotation: [rotX, rotY, rotZ], 
+        scale: Math.random() * 0.5 + 0.5, 
+        color,
+        explodeDir: [explodeDir.x, explodeDir.y, explodeDir.z]
+      });
     }
     return temp;
   }, []);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (meshRef.current) {
+      // Base rotation
       meshRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.03;
+
+      // Explode animation
+      const targetProgress = isExploded ? 1 : 0;
+      const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
+      explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+
+      const tempObject = new THREE.Object3D();
+      particles.forEach((p, i) => {
+        const ex = p.explodeDir as number[];
+        const pos = p.position as number[];
+        
+        tempObject.position.set(
+          pos[0] + ex[0] * explodeProgress.current,
+          pos[1] + ex[1] * explodeProgress.current,
+          pos[2] + ex[2] * explodeProgress.current
+        );
+        
+        tempObject.rotation.set(
+          (p.rotation[0] as number) + state.clock.elapsedTime * explodeProgress.current,
+          (p.rotation[1] as number) + state.clock.elapsedTime * explodeProgress.current,
+          (p.rotation[2] as number)
+        );
+
+        const scale = (p.scale as number * TREE_CONFIG.PARTICLE_SIZE) * (1 - explodeProgress.current * 0.5);
+        tempObject.scale.set(scale, scale, scale);
+        tempObject.updateMatrix();
+        meshRef.current!.setMatrixAt(i, tempObject.matrix);
+      });
+      meshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
 

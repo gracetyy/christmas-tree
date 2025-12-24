@@ -23,9 +23,14 @@ const getFluffTexture = () => {
     return texture;
 }
 
-const SpiralDecor: React.FC = () => {
+interface SpiralDecorProps {
+  isExploded?: boolean;
+}
+
+const SpiralDecor: React.FC<SpiralDecorProps> = ({ isExploded = false }) => {
   const lineRef = useRef<THREE.Mesh>(null);
   const pointsRef = useRef<THREE.Points>(null);
+  const explodeProgress = useRef(0);
   
   const fluffTexture = useMemo(() => getFluffTexture(), []);
 
@@ -40,7 +45,7 @@ const SpiralDecor: React.FC = () => {
   }, []);
 
   // Generate "Fluffy" Tinsel Particles
-  const tinselGeo = useMemo(() => {
+  const { tinselGeo, initialTinselPositions } = useMemo(() => {
     const curvePoints = curve.getSpacedPoints(1200); 
     const particlesPerPoint = 12; 
     const totalParticles = curvePoints.length * particlesPerPoint;
@@ -85,9 +90,10 @@ const SpiralDecor: React.FC = () => {
     }
     
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3)); // Use a copy for the attribute
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    return geo;
+    
+    return { tinselGeo: geo, initialTinselPositions: positions };
   }, [curve]);
 
   // Generate decorative balls
@@ -125,18 +131,39 @@ const SpiralDecor: React.FC = () => {
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
-    
+    const targetProgress = isExploded ? 1 : 0;
+    const lerpFactor = isExploded ? 0.05 : 0.12; // Faster return
+    explodeProgress.current = THREE.MathUtils.lerp(explodeProgress.current, targetProgress, lerpFactor);
+
     if (lineRef.current) {
         const material = lineRef.current.material as THREE.MeshStandardMaterial;
         // Pulse effect for the "Light" string
         const pulse = (Math.sin(time * 3.0) * 0.3 + 0.7); 
-        material.emissiveIntensity = 3.0 * pulse;
+        material.emissiveIntensity = 3.0 * pulse * (1 - explodeProgress.current);
+        
+        lineRef.current.scale.setScalar(1 - explodeProgress.current);
+        lineRef.current.visible = explodeProgress.current < 0.95;
     }
 
     // Twinkle the fluff slightly by rotating or scaling
     if (pointsRef.current) {
         // Very slow drift to make it feel alive
         pointsRef.current.rotation.y = Math.sin(time * 0.5) * 0.02;
+
+        // Scatter points
+        const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
+        
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = initialTinselPositions[i];
+            const y = initialTinselPositions[i+1];
+            const z = initialTinselPositions[i+2];
+            
+            const dir = new THREE.Vector3(x, y, z).normalize();
+            positions[i] = x + dir.x * explodeProgress.current * 15;
+            positions[i+1] = y + dir.y * explodeProgress.current * 15;
+            positions[i+2] = z + dir.z * explodeProgress.current * 15;
+        }
+        pointsRef.current.geometry.attributes.position.needsUpdate = true;
     }
   });
 
@@ -156,16 +183,18 @@ const SpiralDecor: React.FC = () => {
       </mesh>
 
       {/* Volumetric Glow Shell */}
-      <mesh>
-        <tubeGeometry args={[curve, 500, SPIRAL_CONFIG.THICKNESS * 2.5, 8, false]} />
-        <meshBasicMaterial 
-            color={COLORS.SPIRAL_LIGHT}
-            transparent
-            opacity={0.1}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-        />
-      </mesh>
+      {!isExploded && (
+        <mesh>
+            <tubeGeometry args={[curve, 500, SPIRAL_CONFIG.THICKNESS * 2.5, 8, false]} />
+            <meshBasicMaterial 
+                color={COLORS.SPIRAL_LIGHT}
+                transparent
+                opacity={0.1}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+            />
+        </mesh>
+      )}
 
       {/* Fluffy Tinsel Particles */}
       <points ref={pointsRef} geometry={tinselGeo}>
@@ -184,28 +213,41 @@ const SpiralDecor: React.FC = () => {
       </points>
 
       {/* Point lights along the spiral path to illuminate tree and photos */}
-      <pointLight position={[0, 2, 0]} intensity={2} color={COLORS.SPIRAL_LIGHT} distance={10} decay={2} />
-      <pointLight position={[0, -2, 0]} intensity={2} color={COLORS.SPIRAL_LIGHT} distance={10} decay={2} />
+      {!isExploded && (
+        <>
+            <pointLight position={[0, 2, 0]} intensity={2} color={COLORS.SPIRAL_LIGHT} distance={10} decay={2} />
+            <pointLight position={[0, -2, 0]} intensity={2} color={COLORS.SPIRAL_LIGHT} distance={10} decay={2} />
+        </>
+      )}
 
       {/* Decorative Ornaments */}
-      {baubles.map((b, i) => (
-        <group key={i} position={b.position} rotation={b.rotation as any} scale={[b.scale, b.scale, b.scale]}>
-            <mesh>
-                <sphereGeometry args={[1, 32, 32]} />
-                <meshStandardMaterial 
-                    color={b.color}
-                    emissive={b.color}
-                    emissiveIntensity={0.4}
-                    metalness={0.9} 
-                    roughness={0.1} 
-                />
-            </mesh>
-            <mesh position={[0, 0.9, 0]}>
-                <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} />
-                <meshStandardMaterial color={COLORS.DECORATION_GOLD} metalness={1} roughness={0.3} />
-            </mesh>
-        </group>
-      ))}
+      {baubles.map((b, i) => {
+        const dir = b.position.clone().normalize();
+        const exPos = new THREE.Vector3(
+            b.position.x + dir.x * explodeProgress.current * 20,
+            b.position.y + dir.y * explodeProgress.current * 20,
+            b.position.z + dir.z * explodeProgress.current * 20
+        );
+
+        return (
+            <group key={i} position={exPos} rotation={b.rotation as any} scale={[b.scale, b.scale, b.scale]}>
+                <mesh>
+                    <sphereGeometry args={[1, 32, 32]} />
+                    <meshStandardMaterial 
+                        color={b.color}
+                        emissive={b.color}
+                        emissiveIntensity={0.4}
+                        metalness={0.9} 
+                        roughness={0.1} 
+                    />
+                </mesh>
+                <mesh position={[0, 0.9, 0]}>
+                    <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} />
+                    <meshStandardMaterial color={COLORS.DECORATION_GOLD} metalness={1} roughness={0.3} />
+                </mesh>
+            </group>
+        );
+      })}
     </group>
   );
 };

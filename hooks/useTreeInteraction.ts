@@ -12,27 +12,8 @@ interface UseTreeInteractionProps {
 export const useTreeInteraction = ({ photos, interactionMode, isInstaModalOpen, isRecording }: UseTreeInteractionProps) => {
     const [zoomLevel, setZoomLevel] = useState<ZoomLevel>(ZoomLevel.FULL_TREE);
     const [focusedPhoto, setFocusedPhoto] = useState<PhotoData | null>(null);
+    const [isExploded, setIsExploded] = useState(false);
     const panOffset = useRef({ x: 0, y: 0 });
-
-    // Clear focused photo when zooming out
-    useEffect(() => {
-        if (zoomLevel === ZoomLevel.FULL_TREE) {
-            setFocusedPhoto(null);
-        }
-    }, [zoomLevel]);
-
-    // Hand Gesture Handler
-    const handleGesture = useCallback((action: 'ZOOM_IN' | 'ZOOM_OUT' | 'PAN', delta?: { x: number, y: number }) => {
-        if (action === 'ZOOM_IN') {
-            setZoomLevel(ZoomLevel.ZOOMED_IN);
-        } else if (action === 'ZOOM_OUT') {
-            setZoomLevel(ZoomLevel.FULL_TREE);
-        } else if (action === 'PAN' && delta) {
-            // Accumulate pan offset
-            panOffset.current.x += delta.x;
-            panOffset.current.y += delta.y;
-        }
-    }, []);
 
     const handlePhotoClick = useCallback((photo: PhotoData) => {
         if (interactionMode === InteractionMode.EDIT) {
@@ -53,16 +34,42 @@ export const useTreeInteraction = ({ photos, interactionMode, isInstaModalOpen, 
     const handleNextPhoto = useCallback(() => {
         if (!focusedPhoto || photos.length === 0) return;
         const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-        const nextIndex = (currentIndex - 1 + photos.length) % photos.length;
+        // Next = Go forward in array (+1)
+        const nextIndex = (currentIndex + 1) % photos.length;
         handlePhotoClick(photos[nextIndex]);
     }, [focusedPhoto, photos, handlePhotoClick]);
 
     const handlePrevPhoto = useCallback(() => {
         if (!focusedPhoto || photos.length === 0) return;
         const currentIndex = photos.findIndex(p => p.id === focusedPhoto.id);
-        const prevIndex = (currentIndex + 1) % photos.length;
+        // Prev = Go backward in array (-1)
+        const prevIndex = (currentIndex - 1 + photos.length) % photos.length;
         handlePhotoClick(photos[prevIndex]);
     }, [focusedPhoto, photos, handlePhotoClick]);
+
+    // Hand Gesture Handler
+    const handleGesture = useCallback((action: 'ZOOM_IN' | 'ZOOM_OUT' | 'NEXT' | 'PREV' | 'PAN' | 'EXPLODE', delta?: { x: number, y: number }) => {
+        if (action === 'ZOOM_IN') {
+            // If we already have a focused photo, return to it instead of jumping to the first one
+            if (focusedPhoto) {
+                handlePhotoClick(focusedPhoto);
+            } else if (photos.length > 0) {
+                handlePhotoClick(photos[0]);
+            }
+        } else if (action === 'ZOOM_OUT') {
+            setZoomLevel(ZoomLevel.FULL_TREE);
+        } else if (action === 'NEXT') {
+            handleNextPhoto();
+        } else if (action === 'PREV') {
+            handlePrevPhoto();
+        } else if (action === 'EXPLODE') {
+            setIsExploded(prev => !prev);
+        } else if (action === 'PAN' && delta) {
+            // Accumulate pan offset
+            panOffset.current.x += delta.x;
+            panOffset.current.y += delta.y;
+        }
+    }, [focusedPhoto, photos, handlePhotoClick, handleNextPhoto, handlePrevPhoto]);
 
     // Keyboard Navigation
     useEffect(() => {
@@ -96,6 +103,7 @@ export const useTreeInteraction = ({ photos, interactionMode, isInstaModalOpen, 
         setZoomLevel,
         focusedPhoto,
         setFocusedPhoto,
+        isExploded,
         panOffset,
         handleGesture,
         handlePhotoClick,

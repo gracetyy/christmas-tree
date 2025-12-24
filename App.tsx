@@ -56,6 +56,7 @@ const App: React.FC = () => {
     setZoomLevel,
     focusedPhoto,
     setFocusedPhoto,
+    isExploded,
     panOffset,
     handleGesture,
     handlePhotoClick,
@@ -156,6 +157,7 @@ const App: React.FC = () => {
         zoomLevel={zoomLevel}
         panOffset={panOffset}
         focusedPhoto={focusedPhoto}
+        isExploded={isExploded}
         isRecording={isRecording}
         recordingType={recordingType}
         userName={userName}
@@ -193,6 +195,8 @@ const App: React.FC = () => {
 
       <HandController
         mode={controlMode}
+        zoomLevel={zoomLevel}
+        isExploded={isExploded}
         onGesture={handleGesture}
         videoRef={videoRef}
       />
