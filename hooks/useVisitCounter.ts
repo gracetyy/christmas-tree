@@ -6,27 +6,16 @@ export const useVisitCounter = () => {
   useEffect(() => {
     const updateAndFetchCount = async () => {
       try {
-        const hasVisited = sessionStorage.getItem('has_visited_v5');
-        const apiKey = import.meta.env.VITE_COUNTER_API_KEY;
-        
-        if (!apiKey) {
-          console.warn('VITE_COUNTER_API_KEY is not set. Visit counter will not work.');
-          return;
-        }
+        const hasVisited = sessionStorage.getItem('has_visited_v6');
 
-        // Using your new v2 API endpoint
-        const baseUrl = 'https://api.counterapi.dev/v2/gracetyy/christmas-tree';
-        const url = hasVisited ? baseUrl : `${baseUrl}/up`;
+        // Call our serverless proxy on the same origin to avoid CORS and hide the API key
+        const url = hasVisited ? '/api/counter' : '/api/counter';
+        const method = hasVisited ? 'GET' : 'POST';
 
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Accept': 'application/json'
-          }
-        });
+        const response = await fetch(url, { method });
         
         if (!response.ok) {
-          throw new Error(`Counter API error: ${response.status}`);
+          throw new Error(`Counter Proxy error: ${response.status}`);
         }
 
         const data = await response.json();
@@ -35,7 +24,7 @@ export const useVisitCounter = () => {
         if (data && typeof data.count === 'number') {
           setVisitCount(data.count);
           if (!hasVisited) {
-            sessionStorage.setItem('has_visited_v5', 'true');
+            sessionStorage.setItem('has_visited_v6', 'true');
           }
         }
       } catch (error) {
