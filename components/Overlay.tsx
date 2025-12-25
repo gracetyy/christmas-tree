@@ -117,6 +117,8 @@ const Overlay: React.FC<OverlayProps> = ({
   };
 
   const [showUI, setShowUI] = useState(true);
+  // By default keep the hand gesture pane expanded (not collapsed)
+  const [gestureCollapsed, setGestureCollapsed] = useState<boolean>(false);
 
   // if (isRecording) return null; // Removed to keep title visible
 
@@ -169,106 +171,132 @@ const Overlay: React.FC<OverlayProps> = ({
         )}
       </div>
 
-      {/* Instructions Pane - Responsive positioning */}
+      {/* Instructions Pane - Responsive positioning (collapsible on mobile) */}
       <div className="absolute top-1/4 right-4 md:top-1/2 md:right-8 transform md:-translate-y-1/2 pointer-events-none transition-all duration-500 z-20">
         {!isRecording && showUI && controlMode === ControlMode.HAND && (
-          <div className="bg-white/5 backdrop-blur-3xl p-3 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/10 text-white/90 w-40 md:w-64 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col gap-2 md:gap-4 animate-in fade-in slide-in-from-right-4 duration-700">
-            <div className="flex items-center gap-2 md:gap-3 border-b border-white/10 pb-2 md:pb-3">
-              <div className="p-1.5 md:p-2 bg-[#1cbd62]/20 rounded-full">
-                <Hand className="w-4 h-4 md:w-5 md:h-5 text-[#1cbd62]" />
+          <>
+            {/* Expanded pane */}
+            {!gestureCollapsed ? (
+              <div className="relative pointer-events-auto transition-all duration-500 ease-in-out animate-in fade-in slide-in-from-right-4">
+                <div className="bg-white/5 backdrop-blur-3xl p-3 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/10 text-white/90 w-40 md:w-64 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] flex flex-col gap-2 md:gap-4 transition-all duration-500">
+                  {/* Thinner vertical collapse handle, chevron right (>) for collapse */}
+                  <button
+                    onClick={() => setGestureCollapsed(true)}
+                    className="absolute -left-5 top-1/2 -translate-y-1/2 w-4 h-20 md:w-5 md:h-24 flex flex-col items-center justify-center rounded-l-2xl border-y border-l border-white/20 bg-white/10 backdrop-blur-md shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 z-30 group"
+                    title="Collapse"
+                  >
+                    <span className="w-1 h-10 bg-white/20 rounded-full group-hover:bg-white/40 transition-all"></span>
+                  </button>
+                  <div className="flex items-center gap-2 md:gap-3 border-b border-white/10 pb-2 md:pb-3">
+                  <div className="p-1.5 md:p-2 bg-[#1cbd62]/20 rounded-full">
+                    <Hand className="w-4 h-4 md:w-5 md:h-5 text-[#1cbd62]" />
+                  </div>
+                  <h3 className="font-semibold tracking-wide uppercase text-[10px] md:text-xs">Hand Controls</h3>
+                </div>
+
+                <ul className="space-y-3 md:space-y-4">
+                  {isExploded ? (
+                    <>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
+                          <span className="text-xs md:text-sm font-medium">Float Around</span>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
+                          <span className="text-xs md:text-sm font-medium">Exit Explode</span>
+                        </div>
+                      </li>
+                    </>
+                  ) : zoomLevel === ZoomLevel.FULL_TREE ? (
+                    <>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
+                          <span className="text-xs md:text-sm font-medium">
+                            <span className="md:hidden">Rotate</span>
+                            <span className="hidden md:inline">Rotate Tree</span>
+                          </span>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <Hand className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
+                          <span className="text-xs md:text-sm font-medium">Zoom In</span>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <PeaceIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Peace Sign</span>
+                          <span className="text-xs md:text-sm font-medium">Explode Tree</span>
+                        </div>
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Swipe Hand</span>
+                          <span className="text-xs md:text-sm font-medium">
+                            <span className="md:hidden">Next/Prev</span>
+                            <span className="hidden md:inline">Next / Prev</span>
+                          </span>
+                        </div>
+                      </li>
+                      <li className="flex items-center gap-3 md:gap-4 group">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
+                          <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
+                          <span className="text-xs md:text-sm font-medium">Zoom Out</span>
+                        </div>
+                      </li>
+                    </>
+                  )}
+                </ul>
+
+                {!isHandReady && (
+                  <div className="mt-1 md:mt-2 py-1.5 md:py-2 px-3 md:px-4 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[8px] md:text-[9px] text-center font-bold animate-pulse uppercase tracking-widest">
+                    <span className="md:hidden">Waiting...</span>
+                    <span className="hidden md:inline">Waiting for camera...</span>
+                  </div>
+                )}
               </div>
-              <h3 className="font-semibold tracking-wide uppercase text-[10px] md:text-xs">Hand Controls</h3>
             </div>
-
-            <ul className="space-y-3 md:space-y-4">
-              {isExploded ? (
-                <>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
-                      <span className="text-xs md:text-sm font-medium">Float Around</span>
-                    </div>
-                  </li>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
-                      <span className="text-xs md:text-sm font-medium">Exit Explode</span>
-                    </div>
-                  </li>
-                </>
-              ) : zoomLevel === ZoomLevel.FULL_TREE ? (
-                <>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Move Hand</span>
-                      <span className="text-xs md:text-sm font-medium">
-                        <span className="md:hidden">Rotate</span>
-                        <span className="hidden md:inline">Rotate Tree</span>
-                      </span>
-                    </div>
-                  </li>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Hand className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Open Palm</span>
-                      <span className="text-xs md:text-sm font-medium">Zoom In</span>
-                    </div>
-                  </li>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <PeaceIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Peace Sign</span>
-                      <span className="text-xs md:text-sm font-medium">Explode Tree</span>
-                    </div>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <Move className="w-4 h-4 md:w-[18px] md:h-[18px] text-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Swipe Hand</span>
-                      <span className="text-xs md:text-sm font-medium">
-                        <span className="md:hidden">Next/Prev</span>
-                        <span className="hidden md:inline">Next / Prev</span>
-                      </span>
-                    </div>
-                  </li>
-                  <li className="flex items-center gap-3 md:gap-4 group">
-                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-white/10 transition-colors">
-                      <div className="w-3 h-3 md:w-4 md:h-4 rounded-sm md:rounded-md border-2 border-white/70" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] md:text-[10px] text-white/40 uppercase tracking-wider font-bold">Closed Fist</span>
-                      <span className="text-xs md:text-sm font-medium">Zoom Out</span>
-                    </div>
-                  </li>
-                </>
-              )}
-            </ul>
-
-            {!isHandReady && (
-              <div className="mt-1 md:mt-2 py-1.5 md:py-2 px-3 md:px-4 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-[8px] md:text-[9px] text-center font-bold animate-pulse uppercase tracking-widest">
-                <span className="md:hidden">Waiting...</span>
-                <span className="hidden md:inline">Waiting for camera...</span>
+            ) : (
+              // Collapsed State - Thinner handle, chevron left (<) for expand
+              <div className="relative pointer-events-auto">
+                <button
+                  onClick={() => setGestureCollapsed(false)}
+                  className="absolute -left-5 top-1/2 -translate-y-1/2 w-4 h-20 md:w-5 md:h-24 flex flex-col items-center justify-center rounded-l-2xl border-y border-l border-white/20 bg-white/10 backdrop-blur-md shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 z-30 group"
+                  title="Show Controls"
+                >
+                    <span className="w-1 h-10 bg-white/20 rounded-full group-hover:bg-white/40 transition-all"></span>
+                </button>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
