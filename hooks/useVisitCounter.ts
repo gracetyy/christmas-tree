@@ -6,28 +6,40 @@ export const useVisitCounter = () => {
   useEffect(() => {
     const updateAndFetchCount = async () => {
       try {
-        // Check if we've already counted this session to avoid over-counting on refreshes
-        const hasVisited = sessionStorage.getItem('has_visited_global');
+        const hasVisited = sessionStorage.getItem('has_visited_v5');
+        const apiKey = import.meta.env.VITE_COUNTER_API_KEY;
         
-        let url = 'https://api.counterapi.dev/v1/gracetyy-christmas-tree/visits';
-        
-        if (!hasVisited) {
-          // Increment the count if it's a new session
-          url += '/up';
-          sessionStorage.setItem('has_visited_global', 'true');
+        if (!apiKey) {
+          console.warn('VITE_COUNTER_API_KEY is not set. Visit counter will not work.');
+          return;
         }
 
-        const response = await fetch(url);
+        // Using your new v2 API endpoint
+        const baseUrl = 'https://api.counterapi.dev/v2/gracetyy/christmas-tree';
+        const url = hasVisited ? baseUrl : `${baseUrl}/up`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Counter API error: ${response.status}`);
+        }
+
         const data = await response.json();
         
-        if (data && data.count) {
+        // v2 API returns { count: number }
+        if (data && typeof data.count === 'number') {
           setVisitCount(data.count);
+          if (!hasVisited) {
+            sessionStorage.setItem('has_visited_v5', 'true');
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch visit count:', error);
-        // Fallback to local storage if API fails
-        const storedCount = localStorage.getItem('visit_count');
-        setVisitCount(storedCount ? parseInt(storedCount, 10) : 0);
+        console.error('Visit Counter Error:', error);
       }
     };
 
