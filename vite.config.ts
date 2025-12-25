@@ -9,6 +9,19 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      // Dev proxy for local testing: forwards /api/counter to CounterAPI v2 and sets Authorization header
+      proxy: {
+        '/api/counter': {
+          target: 'https://api.counterapi.dev',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (p) => p.replace(/^\/api\/counter/, '/v2/gracetyy/christmas-tree'),
+          headers: {
+            // Inject API key from local env for development only
+            Authorization: `Bearer ${env.COUNTER_API_KEY}`
+          }
+        }
+      }
     },
     plugins: [react()],
     define: {
