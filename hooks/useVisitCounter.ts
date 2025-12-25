@@ -19,13 +19,29 @@ export const useVisitCounter = () => {
         }
 
         const data = await response.json();
-        
-        // v2 API returns { count: number }
-        if (data && typeof data.count === 'number') {
-          setVisitCount(data.count);
+        console.log('Counter proxy returned:', data);
+
+        // Flexibly extract a numeric count from various possible response shapes
+        let count: number | null = null;
+
+        if (data && typeof data.count === 'number') count = data.count;
+        else if (data && typeof data.value === 'number') count = data.value;
+        else if (data && typeof data.total === 'number') count = data.total;
+        else if (data && typeof data.raw === 'string') {
+          // Some services return a plain string (e.g., HTML/SVG); try to extract digits
+          const match = data.raw.match(/(\d[\d,]*)/);
+          if (match) count = parseInt(match[1].replace(/,/g, ''), 10);
+        } else if (data && data.data && typeof data.data.count === 'number') {
+          count = data.data.count;
+        }
+
+        if (count !== null) {
+          setVisitCount(count);
           if (!hasVisited) {
             sessionStorage.setItem('has_visited_v6', 'true');
           }
+        } else {
+          console.warn('Unable to determine numeric visit count from response', data);
         }
       } catch (error) {
         console.error('Visit Counter Error:', error);

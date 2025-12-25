@@ -24,6 +24,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('Proxy forwarding to:', target);
     const response = await fetch(target, {
       method: 'GET', // Counter API uses GET for both endpoints
       headers: {
@@ -32,7 +33,19 @@ export default async function handler(req, res) {
       }
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    console.log('Raw CounterAPI response:', text);
+
+    // Try to parse JSON, but if it's not JSON, return raw text for debugging
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.warn('Failed to parse CounterAPI response as JSON:', parseErr);
+      data = { raw: text };
+    }
+
+    console.log('Parsed CounterAPI response:', data);
     res.status(response.status).json(data);
   } catch (err) {
     console.error('Proxy Error:', err);
