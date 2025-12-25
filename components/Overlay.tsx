@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ControlMode, ZoomLevel, InteractionMode } from '../types';
-import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Video } from 'lucide-react';
+import { Mouse, Hand, ImagePlus, Music, VolumeX, Eye, EyeOff, Edit3, Instagram, Download, Maximize, Move, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Github, Video, Users } from 'lucide-react';
 
 interface OverlayProps {
   controlMode: ControlMode;
@@ -23,6 +23,7 @@ interface OverlayProps {
   onRecordVideo: (type: 'FULL' | 'ALBUM') => void;
   isRecording: boolean;
   isExploded?: boolean;
+  visitCount: number;
 }
 
 const PeaceIcon = ({ className }: { className?: string }) => (
@@ -52,7 +53,8 @@ const Overlay: React.FC<OverlayProps> = ({
   setIsNameSet,
   onRecordVideo,
   isRecording,
-  isExploded
+  isExploded,
+  visitCount
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -120,6 +122,17 @@ const Overlay: React.FC<OverlayProps> = ({
 
   return (
     <div id="overlay-container" className="absolute inset-0 pointer-events-none z-50 flex flex-col justify-between p-4 md:p-6">
+      
+      {/* Visit Counter - Top Right */}
+      {!isRecording && showUI && (
+        <div className="absolute top-6 right-6 pointer-events-auto flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10 shadow-lg animate-in fade-in slide-in-from-right-2 duration-700">
+          <Users className="w-3.5 h-3.5 text-[#fff1a1]" />
+          <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">
+            <span className="hidden md:inline">Total Visits: </span>
+            <span className="text-[#fff1a1]">{visitCount.toLocaleString()}</span>
+          </span>
+        </div>
+      )}
 
       {/* Top Header - Just the Title */}
       <div className="flex flex-col justify-center items-center w-full relative pt-2 md:pt-8 px-4">
