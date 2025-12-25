@@ -10,8 +10,10 @@ import { useAudio } from './hooks/useAudio';
 import { useRecording } from './hooks/useRecording';
 import { useInstagram } from './hooks/useInstagram';
 import { useTreeInteraction } from './hooks/useTreeInteraction';
+import { useVisitCounter } from './hooks/useVisitCounter';
 import { processImageWithPadding } from './utils/image';
 import { AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
   const [controlMode, setControlMode] = useState<ControlMode>(ControlMode.MOUSE);
@@ -21,6 +23,8 @@ const App: React.FC = () => {
   const [isNameSet, setIsNameSet] = useState(false);
   const [isHandReady, setIsHandReady] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
+
+  const visitCount = useVisitCounter();
 
   const showToast = useCallback((message: string, type: 'error' | 'success' = 'error') => {
     setToast({ message, type });
@@ -250,6 +254,7 @@ const App: React.FC = () => {
         onRecordVideo={handleRecordVideo}
         isRecording={isRecording}
         isExploded={isExploded}
+        visitCount={visitCount}
       />
 
       <InstagramModal
@@ -306,6 +311,7 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 };
