@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "0.10.9",
-    "@react-three/drei": "9.99.0",
+    "@react-three/drei": "9.122.0",
     "@react-three/fiber": "8.15.16",
     "@react-three/postprocessing": "2.16.0",
     "@vercel/analytics": "^1.6.1",
